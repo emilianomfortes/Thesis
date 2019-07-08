@@ -124,9 +124,28 @@ def S_zzij(pos_i,pos_j,sites):
                 S[i,i] = 1
     return S
     
+def Parity(sites): # Returns the parity operator in the S_z base
+    dim = 2 ** sites
+    identity = np.zeros((dim,dim),dtype=complex)
+    zeros = np.zeros((4,4),dtype=complex)
+    for n in range(dim):
+        identity[n,n] = 1
+    Dx = np.matrix([[0,1],[1,0]],dtype=complex)
+    Dy = np.matrix([[0,-1j],[1j,0]],dtype=complex)
+    Dz = np.matrix([[1,0],[0,-1]],dtype=complex)
+    Parity = identity
+    if sites % 2 == 0:
+        tt = sites/2
+    else:
+        tt = (sites-1)/2
+    for u in range(tt):
+        P = 0.5* (identity + np.matmul(S_x_i(u,sites),S_x_i(sites-1-u,sites)) + np.matmul(S_y_i(u,sites),S_y_i(sites-1-u,sites)) + np.matmul(S_z_i(u,sites),S_z_i(sites-1-u,sites)) )
+        Parity = np.matmul(Parity,P)
+    return Parity
+    
 #----------------  OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
 
-def OTOCF(def OTOCF(V,W,ener,basis,N,dt,t0,beta):
+def OTOCF(V,W,ener,basis,N,dt,t0,beta):
     ensemble  = np.zeros((len(ener),len(ener)),dtype=complex)
     for i in range(0,len(ener)):
         ensemble[i][i] = np.exp(-beta*ener[i])
