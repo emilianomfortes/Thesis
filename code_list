@@ -1,0 +1,172 @@
+import numpy as np
+
+#----------------  BINARY OPERATIONS  ----------------#
+
+def btest(i, pos): #btest translated
+    return bool(i & (1 << pos))
+
+def set_bit(v, index, x): #ibclr if x=0 and ibset if x=1 translated
+  """Set the index:th bit of v to 1 if x is truthy, else to 0, and return the new value."""
+  mask = 1 << index   
+  v &= ~mask
+  if x:
+    v |= mask
+  return v
+
+#----------------  SPIN OPERATIONS  ----------------#
+
+# Pauli at site operators
+
+def S_xi(pos_i,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    estados2 = np.zeros(dim,dtype=np.int64)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            estados2[i] = set_bit(i,pos_i,0)
+        else:
+            estados2[i] = set_bit(i,pos_i,1)
+    for i in range(dim):
+        for j in range(dim):
+            if i == estados2[j]:
+                S[i,j] = S[i,j]+1
+    return S
+
+def S_yi(pos_i,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    estados2 = np.zeros(dim,dtype=np.int64)
+    a = np.zeros(dim,dtype=complex)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            estados2[i] = set_bit(i,pos_i,0)
+            a[i] = 1j
+        else:
+            estados2[i] = set_bit(i,pos_i,1)
+            a[i] = -1j
+    for i in range(dim):
+        for j in range(dim):
+            if i == estados2[j]:
+                S[i,j] = S[i,j]+a[j]
+    return S
+    
+def S_zi(pos_i,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            S[i,i] = 1
+        else:
+            S[i,i] = -1
+    return S
+
+# Nearest-neighbor interactions
+
+def S_xxij(pos_i,pos_j,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    estados2 = np.zeros(dim,dtype=np.int64)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            estados2[i] = set_bit(i,pos_i,0)
+        else:
+            estados2[i] = set_bit(i,pos_i,1)
+    for i in range(dim):
+        if btest(estados2[i],pos_j) == True:
+            estados2[i] = set_bit(estados2[i],pos_j,0)
+        else:
+            estados2[i] = set_bit(estados2[i],pos_j,1)
+    for i in range(dim):
+        for j in range(dim):
+            if i == estados2[j]:
+                S[i,j] = S[i,j]+1
+    return S
+
+def S_yyij(pos_i,pos_j,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    estados2 = np.zeros(dim,dtype=np.int64)
+    a = np.zeros(dim,dtype=complex)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            estados2[i] = set_bit(i,pos_i,0)
+            a[i] = 1j
+        else:
+            estados2[i] = set_bit(i,pos_i,1)
+            a[i] = -1j
+    #estados2 = estados2.astype(np.int64)
+    for i in range(dim):
+        if btest(estados2[i],pos_j) == True:
+            estados2[i] = set_bit(estados2[i],pos_j,0)
+            a[i] = a[i]*1j
+        else:
+            estados2[i] = set_bit(estados2[i],pos_j,1)
+            a[i] = -a[i]*1j
+    for i in range(dim):
+        for j in range(dim):
+            if i == estados2[j]:
+                S[i,j] = S[i,j]+a[j]
+    return S
+
+def S_zzij(pos_i,pos_j,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        if btest(i,pos_i) == True:
+            if btest(i,pos_j) == True:
+                S[i,i] = 1
+            else:
+                S[i,i] = -1
+        else:
+            if btest(i,pos_j) == True:
+                S[i,i] = -1
+            else:
+                S[i,i] = 1
+    return S
+    
+#----------------  OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
+
+def OTOCF(def OTOCF(V,W,ener,basis,N,dt,t0,beta):
+    ensemble  = np.zeros((len(ener),len(ener)),dtype=complex)
+    for i in range(0,len(ener)):
+        ensemble[i][i] = np.exp(-beta*ener[i])
+    ensemblemedio = np.abs(np.matrix.trace(ensemble))
+    #basist = np.transpose(basis)
+    #inv = np.linalg.inv(basist)
+    aux = np.matmul(np.linalg.inv(basis),W)
+    ope = np.matmul(aux,basis)
+
+    aux0 = np.matmul(np.linalg.inv(basis),V)
+    ope0 = np.matmul(aux0,basis)
+    otoc=[]
+    tiempo=[]
+    mm = np.zeros((len(ener),len(ener)),dtype=complex)
+    mm1 = np.zeros((len(ener),len(ener)),dtype=complex)
+    mm2 = np.zeros((len(ener),len(ener)),dtype=complex)
+    mm3 = np.zeros((len(ener),len(ener)),dtype=complex)
+    mm4 = np.zeros((len(ener),len(ener)),dtype=complex)
+    mm5 = np.zeros((len(ener),len(ener)),dtype=complex)
+
+    for count0 in range(0,N):
+    #    tie=count0*dt+t0
+        tie = count0*dt+t0
+        tiempo.append(tie)
+        U = np.zeros((len(ener),len(ener)),dtype=complex) # U evolucion temporal
+        Udagger = np.zeros((len(ener),len(ener)),dtype=complex) # U*
+        for count1 in range(0,len(ener)):
+            U[count1][count1] = np.exp(-1j*tie*ener[count1])
+            Udagger[count1][count1] = np.exp(1j*tie*ener[count1])
+        mm = np.matmul(ope,U)
+        mm1=np.matmul(Udagger,mm)
+        
+        mm = np.matmul(mm1,ope0)
+        mm2 = np.matmul(ope0,mm1)
+        mm3 = mm-mm2
+        mm5 = mm3
+        mm5 = mm3.transpose()
+        mm5 = mm5.conjugate()
+        mm4 = np.matmul(mm5,mm3)
+        mm4 = np.matmul(ensemble,mm4)
+        otoc.append(np.abs(np.matrix.trace(mm4)) / ensemblemedio )     
+    otoc[:] = [x / 2 for x in otoc]
+    return otoc
