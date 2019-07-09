@@ -1,11 +1,15 @@
 import numpy as np
+from scipy.linalg import blas as FB
 
 #----------------  BINARY OPERATIONS  ----------------#
+#Translations from fortran --> python
 
-def btest(i, pos): #btest translated
+#btest
+def btest(i, pos): 
     return bool(i & (1 << pos))
 
-def set_bit(v, index, x): #ibclr if x=0 and ibset if x=1 translated
+#ibclr/ibset
+def set_bit(v, index, x): #if x=0 --> ibclr / if x=1 --> ibset 
   """Set the index:th bit of v to 1 if x is truthy, else to 0, and return the new value."""
   mask = 1 << index   
   v &= ~mask
@@ -60,7 +64,7 @@ def S_zi(pos_i,sites):
             S[i,i] = -1
     return S
 
-# Nearest-neighbor interactions
+# Neighbor i-j site interactions
 
 def S_xxij(pos_i,pos_j,sites):
     dim = 2**sites
@@ -124,7 +128,7 @@ def S_zzij(pos_i,pos_j,sites):
                 S[i,i] = 1
     return S
     
-def Parity(sites): # Returns the parity operator in the S_z base
+def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE REHACERLO!!!!!! ESTA MAL! (PERO NO MUY MAL)
     dim = 2 ** sites
     identity = np.zeros((dim,dim),dtype=complex)
     zeros = np.zeros((4,4),dtype=complex)
@@ -184,96 +188,125 @@ def OTOC(V,W,ener,basis,N,dt,t0,beta,ortho):
 
 #### INFTY TEMPERATURE OTOCS
 
-## Calculates OTOC OPTMIZED SPEED
-start_time = timeit.default_timer()
+## OTOC OPTMIZED SPEED
 
-mm = np.zeros((len(ener),len(ener)),dtype="complex64")
-mm1 = np.zeros((len(ener),len(ener)),dtype="complex64")
-mm2 = np.zeros((len(ener),len(ener)),dtype="complex64")
-mm = np.copy(mm, order='F')
-mm1= np.copy(mm1, order='F')
-mm2=np.copy(mm2, order='F')
-otok = np.zeros(N,dtype = "float32")
-U = np.zeros((len(ener),len(ener)),dtype="complex64") # U evolucion temporal
-Udagger = np.zeros((len(ener),len(ener)),dtype="complex64") # U*
-U = np.copy(U, order='F')
-Udagger = np.copy(Udagger, order='F')
-for ti in range(0,N):
-    #start_time = timeit.default_timer()
-    for c1 in range(0,len(ener)):
-        U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
-        Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
-    mm = FB.cgemm(1,S0,U)
-    mm1= FB.cgemm(1,Udagger,mm)
-    mm = FB.cgemm(1,mm1,S) - FB.cgemm(1,S,mm1)
-    mm2 = FB.cgemm(1,np.transpose(np.conjugate(mm)),mm)
-    otok[ti] = 0.5*(np.abs(np.matrix.trace(mm2))/len(ener)) 
-    #elapsed = timeit.default_timer() - start_time
-    #print(elapsed) 
-otok = np.array(otok)
+def OTOC_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
+    basis = np.complex64(basis, order = 'F')
+    V = np.complex64(V, order = 'F')
+    W = np.complex64(W, order = 'F')
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    S0 = FB.cgemm(1,V,basis)
+    S0 = FB.cgemm(1,basist,S0)
+    S = FB.cgemm(1,W,basis)
+    S = FB.cgemm(1,basist,S)
+    mm = np.zeros((dim,dim),dtype="complex64",order='F')
+    mm1 = np.zeros((dim,dim),dtype="complex64",order='F')
+    otok = np.zeros(N,dtype = "float32")
+    U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mm = FB.cgemm(1,S0,U)
+        mm1= FB.cgemm(1,Udagger,mm)
+        mm = FB.cgemm(1,mm1,S) - FB.cgemm(1,S,mm1)
+        mm = FB.cgemm(1,np.transpose(np.conjugate(mm)),mm)
+        otok[ti] = 0.5*(np.abs(np.matrix.trace(mm))/dim)
+    otok = np.array(otok)
+    return otok
+    
+## OTOC 1-Re(F) OPTMIZED SPEED - USE ONLY IF BOTH V,W hermitian+unitary
 
-elapsed = timeit.default_timer() - start_time
-print(r"OTOC_FAST took "+str(elapsed))
- 
-np.savetxt('otok_fast.txt', otok , fmt='%.18g', delimiter=' ')
+def OTOCF_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
+    basis = np.complex64(basis, order = 'F')
+    V = np.complex64(V, order = 'F')
+    W = np.complex64(W, order = 'F')
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    S0 = FB.cgemm(1,V,basis)
+    S0 = FB.cgemm(1,basist,S0)
+    S = FB.cgemm(1,W,basis)
+    S = FB.cgemm(1,basist,S)
+    mm = np.zeros((dim,dim),dtype="complex64",order='F')
+    mm1 = np.zeros((dim,dim),dtype="complex64",order='F')
+    otok = np.zeros(N,dtype = "float32")
+    U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mm = FB.cgemm(1,S0,U)
+        mm1= FB.cgemm(1,Udagger,mm)
+        mm = FB.cgemm(1,mm1,S)
+        mm = FB.cgemm(1,mm,mm)
+        otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
+    otok = np.array(otok)
+    return otok
+    
+## OTOC SLOW (IF HIGHER PRECISION REQUIRED)
 
-## Calculates OTOC 1-F SLOW
-start_time = timeit.default_timer()
+def OTOC_infty(V,W,ener,basis,N,dt,t0,ortho):
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    S0 = np.matmul(V,basis)
+    S0 = np.matmul(basist,S0)
+    S = np.matmul(W,basis)
+    S = np.matmul(basist,S)
+    mm = np.zeros((dim,dim),dtype=complex)
+    mm1 = np.zeros((dim,dim),dtype=complex)
+    otok = np.zeros(N,dtype = float)
+    U = np.zeros((dim,dim),dtype=complex) # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype=complex) # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mm = np.matmul(S0,U)
+        mm1= np.matmul(Udagger,mm)
+        mm = np.matmul(mm1,S) - np.matmul(S,mm1)
+        mm = np.matmul(np.transpose(np.conjugate(mm)),mm)
+        otok[ti] = 0.5*(np.abs(np.matrix.trace(mm))/dim)
+    otok = np.array(otok)
+    return otok
 
-S0 = tss.S_z_i_sectores(l0,statedata_full)
-S0 = np.matmul(S0,basis)
-S0 = np.matmul(np.transpose(basis),S0)
-S = tss.S_z_i_sectores(ls,statedata_full)
-S = np.complex64(S)
-S = np.matmul(S,basis)
-S = np.matmul(np.transpose(basis),S)
-mm = np.zeros((len(ener),len(ener)),dtype=complex)
-mm1 = np.zeros((len(ener),len(ener)),dtype=complex)
-mm2 = np.zeros((len(ener),len(ener)),dtype=complex)
-otok = np.zeros(N,dtype = float)
-U = np.zeros((len(ener),len(ener)),dtype=complex) # U evolucion temporal
-Udagger = np.zeros((len(ener),len(ener)),dtype=complex) # U*
-for ti in range(0,N):
-    #start_time = timeit.default_timer()
-    for c1 in range(0,len(ener)):
-        U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
-        Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
-    mm = np.matmul(S0,U)
-    mm1= np.matmul(Udagger,mm)
-    mm = np.matmul(mm1,S)
-    mm2 = np.matmul(mm,mm)
-    otok[ti] = 1 - (np.matrix.trace(mm2)/len(ener)).real 
-    #elapsed = timeit.default_timer() - start_time
-    #print(elapsed) 
-otok = np.array(otok)
+## OTOC 1-F SLOW (IF HIGHER PRECISION REQUIRED)
 
-elapsed = timeit.default_timer() - start_time
-print(r"OTOCF_SLOW took "+str(elapsed))
+def OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho):
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    S0 = np.matmul(V,basis)
+    S0 = np.matmul(basist,S0)
+    S = np.matmul(W,basis)
+    S = np.matmul(basist,S)
+    mm = np.zeros((dim,dim),dtype=complex)
+    mm1 = np.zeros((dim,dim),dtype=complex)
+    otok = np.zeros(N,dtype = float)
+    U = np.zeros((dim,dim),dtype=complex) # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype=complex) # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mm = np.matmul(S0,U)
+        mm1= np.matmul(Udagger,mm)
+        mm = np.matmul(mm1,S)
+        mm = np.matmul(mm,mm)
+        otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
+    otok = np.array(otok)
+    return otok
 
-np.savetxt('otokf_slow.txt', otok , fmt='%.18g', delimiter=' ')
-
-## Calculates OTOC SLOW
-start_time = timeit.default_timer()
-
-mm = np.zeros((len(ener),len(ener)),dtype=complex)
-mm1 = np.zeros((len(ener),len(ener)),dtype=complex)
-mm2 = np.zeros((len(ener),len(ener)),dtype=complex)
-otok = np.zeros(N,dtype = float)
-U = np.zeros((len(ener),len(ener)),dtype=complex) # U evolucion temporal
-Udagger = np.zeros((len(ener),len(ener)),dtype=complex) # U*
-for ti in range(0,N):
-    #start_time = timeit.default_timer()
-    for c1 in range(0,len(ener)):
-        U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
-        Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
-    mm = np.matmul(S0,U)
-    mm1= np.matmul(Udagger,mm)
-    mm = np.matmul(mm1,S) - np.matmul(S,mm1)
-    mm2 = np.matmul(np.transpose(np.conjugate(mm)),mm)
-    otok[ti] = 0.5*(np.abs(np.matrix.trace(mm2))/len(ener)) 
-    #elapsed = timeit.default_timer() - start_time
-    #print(elapsed) 
-otok = np.array(otok)
-
-elapsed = timeit.default_timer() - start_time
-print(r"OTOC_SLOW took "+str(elapsed))
