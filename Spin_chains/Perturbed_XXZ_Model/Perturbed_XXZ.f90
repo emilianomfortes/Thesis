@@ -51,14 +51,6 @@ PROGRAM ISING
   open(17,file = 'hamiltfull.out', status = 'unknown')
   OPEN(18,FILE = 'hamiltodd.out',status='unknown')
   OPEN(25,FILE = 'HHnodiag.out',status='unknown')
-!  OPEN(9,FILE = 'ope.out',status='unknown')
-!  OPEN(11,FILE = 'ener2.out', status='unknown')
-!  OPEN(12,FILE = 'Hamiltoniano.out', status ='unknown')
-!  open(14,file = 'flags', status = 'unknown')
-!  open(16,file = 'HHparityfull.out', status = 'unknown')
-!  OPEN(17,FILE = 'HHparidad', status = 'unknown')
-!  OPEN(23,FILE = 'HHnodiag.out',status ='unknown')
-!  OPEN(33,FILE = 'HHcompleto.out',status ='unknown')
 
   ALLOCATE(HH(dim,dim),energy(dim),vec1(dim),width(bins),HH1(dim,dim),vec(dim),histo(bins),HH0(dim,dim),Tr(dim,dim))
   ALLOCATE(work(3*dim**2),IWORK(6*dim),state(dim),flag(2**sites),ener_vec(dim),HHparity(dim,dim),statepp(dim),statepn(dim))
@@ -68,52 +60,27 @@ PROGRAM ISING
   CALL ITIME(T1)
   TIME_1=T1(1)*3600+T1(2)*60+T1(3)
   
-
-!!  alpha_x = 1.D0
-!!  alpha_y = 1.D0
-!!  alpha_z = 0.5D0
-  GG = 0.D0 !1.5D0
-  alpha2_x = alpha_x
-  alpha2_y = alpha_y
-  alpha2_z = alpha_z
+  GG = 0.D0 
   PRINT*, mu,alpha_z
   neig = 1
   CALL ising_chain_FN(GG,alpha_x,alpha_y,alpha_z,sites,n_partic,boundary_con,neig,HH0,state,flag)
   neig = 2
+  alpha2_x = alpha_x
+  alpha2_y = alpha_y
+  alpha2_z = alpha_z
   CALL ising_chain_FN(GG,alpha2_x,alpha2_y,alpha2_z,sites,n_partic,boundary_con,neig,HH1,state,flag)
 
   HH = HH0 + mu*HH1
-!!$  HH1 = HH + 0.05*HH1
-!  DO i=1,dim
-!   write(12,*)HH(i,:)
-!  ENDDO
-!  do i=1,dim
-!   write(23,*)HH(:,i)
-!  enddo
 
   do i=1,dim        
     write(25,*)HH0(:,i)
   enddo
 
-
   CALL DSYEVD('V','U',dim,HH,dim,energy,work,3*dim**2,IWORK,6*dim,info)
   CALL DSYEVD('V','U',dim,HH0,dim,energy0,work,3*dim**2,IWORK,6*dim,info)
 
-!  neig = 1
-!  CALL ising_chain(GG,alpha_x,alpha_y,alpha_z,HH011,sites,boundary_con,neig)
-!  neig = 2
-!  CALL ising_chain(GG,alpha2_x,alpha2_y,alpha2_z,HH11,sites,boundary_con,neig)
-!  HH12 = HH011 + mu*HH11
-!  do i=1,2**sites
-!   write(33,*)HH12(:,i)
-!  enddo
-
-!  write(11,*)energy
-!  do i=1,dim
-!   write(25,*)HH(:,i)
-!  enddo
-! PARITY SYSTEM !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!! PARITY SYSTEM !!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   do i=1,dim        
      q = state(i)
@@ -131,7 +98,6 @@ PROGRAM ISING
      write(17,*)HH(:,i)
   enddo
   write(8,*)energy
-
 
   dim_parity = 0
   dim_parity0 = 0
@@ -155,7 +121,6 @@ PROGRAM ISING
   end do
   
   DEALLOCATE(HHparidad)
-
 
   dim_parity = 0
   dim_parity0 = 0
@@ -188,8 +153,6 @@ PROGRAM ISING
   ener_parity = ener_vec(1:dim_parity)
   ener0_parity = ener0_vec(1:dim_parity)
 
-
-
   ALLOCATE(HHparidad(dim,dim_parity))
 
   PRINT*,dim_parity 
@@ -200,49 +163,9 @@ PROGRAM ISING
 
   write(7,*)ener_parity
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! Operator S_z_i in parity basis did by Diego
 
-!  ALLOCATE(op(dim_parity,dim_parity))
-
-!  write(*,*)opera
-!  do i=1,dim_parity
-!   do j=1,dim_parity
-
-!    ele=0d0
-!    do k=1,dim
-!     if(ibits(state(k),opera-1,1).eq.0)ele=ele-HHparity(k,i)*HHparity(k,j)
-!     if(ibits(state(k),opera-1,1).eq.1)ele=ele+HHparity(k,i)*HHparity(k,j)
-!    end do
-
-!    op(i,j)=ele
-!   end do
-!  end do
-
-!  opera=opera+1
-
-!  do i=1,dim_parity
-!   do j=1,dim_parity
-
-!    ele=0d0
-!    do k=1,dim
-!!     ele=ele+HHparity(k,i)*HHparity(k,j)
-!     if(ibits(state(k),opera,1).eq.0)ele=ele-HHparity(k,i)*HHparity(k,j)
-!     if(ibits(state(k),opera,1).eq.1)ele=ele+HHparity(k,i)*HHparity(k,j)
-!     write(*,*)i,j,k,ele,state(k),ibits(state(k),opera,1)
-!    end do
-
-!    op(i,j)=ele+op(i,j)
-!!    write(*,*)i,j,op(i,j)
-!   end do
-!  end do
-
-
-!  do i=1,dim_parity
-!   write(9,*)op(i,:)
-!  end do
-!! IPR
-
+!!!!!!!!!! INVERSE PARTICIPATION RATIO !!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   print*,shape(HHparidad)
   ALLOCATE(ipr(dim_parity),shaper(2))
   shaper = shape(HHparidad(1,:))
@@ -256,7 +179,6 @@ PROGRAM ISING
     enddo
     write(14,*)ipr(i)
   enddo
-
 
   CALL ITIME(T2)
   TIME_2=T2(1)*3600+T2(2)*60+T2(3)
