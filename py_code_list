@@ -1,7 +1,11 @@
 import numpy as np
 from scipy.linalg import blas as FB
+#INDEX - Use ctrl+F to browse faster
+#(1) - BINARY OPERATIONS
+#(2) - SPIN OPERATIONS
+#(3) - OUT-OF-TIME-ORDERED CORRELATORS
 
-#----------------  BINARY OPERATIONS  ----------------#
+#----------------  (1) BINARY OPERATIONS  ----------------#
 #Translations from fortran --> python
 
 #btest
@@ -17,7 +21,7 @@ def set_bit(v, index, x): #if x=0 --> ibclr / if x=1 --> ibset
     v |= mask
   return v
 
-#----------------  SPIN OPERATIONS  ----------------#
+#----------------  (2) SPIN OPERATIONS  ----------------#
 
 # Pauli at site operators
 
@@ -147,7 +151,7 @@ def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE RE
         Parity = np.matmul(Parity,P)
     return Parity
     
-#----------------  OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
+#----------------  (3) OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
 
 #### WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 
