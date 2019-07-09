@@ -5,7 +5,6 @@ MODULE global
   
 END MODULE global
 
-
 PROGRAM ISING
 
   USE HAMILT
@@ -26,17 +25,12 @@ PROGRAM ISING
   REAL(8), ALLOCATABLE, SAVE :: HH11(:,:),HH011(:,:),HH12(:,:),Tr(:,:),ipr(:),HHparidad(:,:), shaper(:)
   REAL(8), ALLOCATABLE, SAVE ::energy0(:),work(:), vec1(:),vec(:),ener0_vec(:),ener0_parity(:),Sdiag(:)
 
-  OPEN(8,FILE = 'datos.in',status='unknown')
-!!  sites = 15
-!!  n_partic = 5
-!!  bins = 200
-!!  n_cut = 300
-!!  boundary_con = 'open'
-
-  read(8,*)sites,n_partic
-  read(8,*)boundary_con
-  read(8,*)alpha_x,alpha_y,alpha_z
-  read(8,*)mu
+  OPEN(8,FILE = 'datos.in',status='unknown') !Reads chain data file
+  
+  read(8,*)sites,n_partic ! sites = SPIN SITES ; n_partic = NUMBER OF SPINS UP
+  read(8,*)boundary_con ! OPEN/PERIODIC
+  read(8,*)alpha_x,alpha_y,alpha_z  ! neighbor interaction couplings
+  read(8,*)mu ! next-nearest-neighbor interaction perturbation strength
   read(8,*)tau,opera
 
   dim_2 = 2**sites 
@@ -46,13 +40,6 @@ PROGRAM ISING
      dim = int(exp(logfac(sites)-logfac(n_partic)-logfac(sites-n_partic)))
   end if
   
-!  IF(n_partic == 2) THEN
-!  dim = 10
-!  END IF
-!  IF(n_partic == 3) THEN
-!  dim = 10
-!  END IF
- 
   PRINT*,'dim= ',dim
 
   OPEN(5,FILE = 'hamilt.out', status='unknown')
