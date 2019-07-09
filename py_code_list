@@ -8,11 +8,11 @@ from scipy.linalg import blas as FB
 #----------------  (1) BINARY OPERATIONS  ----------------#
 #Translations from fortran --> python
 
-#btest
+#btest (https://gnu.huihoo.org/gcc/gcc-7.1.0/gfortran/BTEST.html)
 def btest(i, pos): 
     return bool(i & (1 << pos))
 
-#ibclr/ibset
+#ibclr/ibset (https://gcc.gnu.org/onlinedocs/gcc-4.6.1/gfortran/IBCLR.html / http://www.lahey.com/docs/lfpro78help/F95ARIBSETFn.htm)
 def set_bit(v, index, x): #if x=0 --> ibclr / if x=1 --> ibset 
   """Set the index:th bit of v to 1 if x is truthy, else to 0, and return the new value."""
   mask = 1 << index   
