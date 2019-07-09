@@ -5,7 +5,6 @@ MODULE global
   
 END MODULE global
 
-
 PROGRAM ISING
 
   USE HAMILT
@@ -61,17 +60,11 @@ PROGRAM ISING
   CALL ITIME(T1)
   TIME_1=T1(1)*3600+T1(2)*60+T1(3)
   
-   GG = 0.D0!1.5d0 !0.
+  GG = 0.D0
 
   PRINT*, alpha_x,alpha_y,alpha_z
   neig = 1
   CALL ising_chain(GG,alpha_x,alpha_y,alpha_z,HH0,sites,boundary_con,neig)
-  
-!  neig = 2
-!  CALL ising_chain(GG,alpha2_x,alpha2_y,alpha2_z,HH2,sites,boundary_con,neig)
-
-!  neig = 3
-!  CALL ising_chain(GG,alpha3_x,alpha3_y,alpha3_z,HH3,sites,boundary_con,neig)     
 
 ! campo trasverso en x
    HH1(:,:)=0d0 
@@ -107,7 +100,6 @@ PROGRAM ISING
 !  do i=1,dim
 !   write(55,*)HH1(i,:)
 !  end do
-
 
 !  print*, "pi =", pie
   HH = HH0 + mu*(SIN(0.5*tita*pi)*HH1 + COS(0.5*tita*pi)*HHZ)
@@ -240,52 +232,9 @@ PROGRAM ISING
  ! write(72,*)ener_parity_odd
  
 
-! END PARITY SYSTEM !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! INVERSE PARTICIPATION RATIO !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!! Operator S_z_i in parity basis did by Diego
-
-  ALLOCATE(op(dim_parity,dim_parity))
-
-!  write(*,*)opera
-!  do i=1,dim_parity
-!   do j=1,dim_parity
-
-!    ele=0d0
-!    do k=1,dim
-!     if(ibits(state(k),opera-1,1).eq.0)ele=ele-HHparity(k,i)*HHparity(k,j)
-!!     if(ibits(state(k),opera-1,1).eq.1)ele=ele+HHparity(k,i)*HHparity(k,j)
- !   end do
-
-!    op(i,j)=ele
-!   end do
-!  end do
-
-!  opera=opera+1
-
-!  do i=1,dim_parity
-!   do j=1,dim_parity
-
-!    ele=0d0
-!    do k=1,dim
-!!     ele=ele+HHparity(k,i)*HHparity(k,j)
-!     if(ibits(state(k),opera,1).eq.0)ele=ele-HHparity(k,i)*HHparity(k,j)
-!     if(ibits(state(k),opera,1).eq.1)ele=ele+HHparity(k,i)*HHparity(k,j)
-!     write(*,*)i,j,k,ele,state(k),ibits(state(k),opera,1)
-!    end do
-
-!    op(i,j)=ele+op(i,j)
-!!    write(*,*)i,j,op(i,j)
-!   end do
-!  end do
-
-
-!  do i=1,dim_parity
-!   write(9,*)op(i,:)
-!  end do
   ALLOCATE(HHparidad(dim,dim_parity))
 
   PRINT*,dim_parity 
