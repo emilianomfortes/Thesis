@@ -4,6 +4,8 @@ from scipy.linalg import blas as FB
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
+##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
+##(3.2) - INFTY TEMPERATURE OTOCS
 
 #----------------  (1) BINARY OPERATIONS  ----------------#
 #Translations from fortran --> python
@@ -132,6 +134,49 @@ def S_zzij(pos_i,pos_j,sites):
                 S[i,i] = 1
     return S
     
+# Entire spin direction operations
+
+def S_x(sites): # Entire S_x operator
+    """ Defines the operator S_x = sum S_x_i where i is the position between (0,N-1) and N = number of sites."""
+    dimension = 2 ** sites 
+    H = np.zeros((dimension,dimension),dtype=complex)
+    for l in range(1,dimension+1):
+        for j in range(0,sites):
+            if btest(l-1,j) == True:
+                hh = set_bit(l-1,j,0) + 1
+            if btest(l-1,j) == False:
+                hh = set_bit(l-1,j,1) + 1
+            H[l-1,hh-1]=H[l-1,hh-1]+1
+    return H
+
+def S_y(sites): # Entire S_y operator
+    """ Defines the operator S_y = sum S_y_i where i is the position between (0,N-1) and N = number of sites."""
+    dimension = 2 ** sites 
+    H = np.zeros((dimension,dimension),dtype=complex)
+    for l in range(1,dimension+1):
+        for u in range(0,sites):
+            if btest(l-1,u) == True:
+                hh = set_bit(l-1,u,0) + 1
+                H[l-1,hh-1]=H[l-1,hh-1] + 1j
+            if btest(l-1,u) == False:
+                hh = set_bit(l-1,u,1) + 1
+                H[l-1,hh-1]=H[l-1,hh-1] - 1j
+    return H
+
+def S_z(sites): # Entire S_z operator
+    """ Defines the operator S_z = sum S_z_i where i is the position between (0,N-1) and N = number of sites."""
+    dimension = 2 ** sites 
+    H = np.zeros((dimension,dimension),dtype=complex)
+    for l in range(1,dimension+1):
+        for j in range(0,sites):
+            if btest(l-1,j) == True:
+                hh = set_bit(l-1,j,1) + 1
+                H[l-1,hh-1]=H[l-1,hh-1] - 1
+            if btest(l-1,j) == False:
+                hh = set_bit(l-1,j,0) + 1
+                H[l-1,hh-1]=H[l-1,hh-1] + 1
+    return H
+    
 def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE REHACERLO!!!!!! ESTA MAL! (PERO NO MUY MAL)
     dim = 2 ** sites
     identity = np.zeros((dim,dim),dtype=complex)
@@ -153,8 +198,9 @@ def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE RE
     
 #----------------  (3) OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
 
-#### WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
+### (3.1) WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 
+#OTOC
 def OTOC(V,W,ener,basis,N,dt,t0,beta,ortho):
     dim = len(ener)
     if ortho == True:
@@ -190,10 +236,45 @@ def OTOC(V,W,ener,basis,N,dt,t0,beta,ortho):
         otoc.append(0.5*np.abs(np.matrix.trace(mm)) / ensemblemedio )
     return otoc
 
-#### INFTY TEMPERATURE OTOCS
+# OTOC 1 - Re(F) - USE ONLY IF V,W ARE BOTH UNITARY & HERMITIAN
+def OTOCF(V,W,ener,basis,N,dt,t0,beta,ortho):
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    ope0 = np.matmul(basist,V)
+    ope0 = np.matmul(ope0,basis)
+    ope = np.matmul(basist,W)
+    ope = np.matmul(ope,basis)
+    otoc=[]
+    mm = np.zeros((dim,dim),dtype=complex)
+    mm1 = np.zeros((dim,dim),dtype=complex)
+    ensemblemedio = dim
+    ensemble = np.identity(dim,dtype=complex)
+    if beta =! 0:
+        for i in range(0,dim):
+            ensemble[i][i] = np.exp(-beta*ener[i])
+        ensemblemedio = np.abs(np.matrix.trace(ensemble))
+    U = np.zeros((dim,dim),dtype=complex) # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype=complex) # U*   
+    for count0 in range(0,N):
+        tie = count0*dt+t0
+        tiempo.append(tie)
+        for count1 in range(0,dim):
+            U[count1][count1] = np.exp(-1j*tie*ener[count1])
+            Udagger[count1][count1] = np.exp(1j*tie*ener[count1])
+        mm = np.matmul(ope0,U)
+        mm1= np.matmul(Udagger,mm)
+        mm = np.matmul(mm1,ope)
+        mm = np.matmul(mm,mm)
+        mm = np.matmul(ensemble,mm)
+        otoc.append(1 - (np.matrix.trace(mm)/ensemblemedio).real )
+    return otoc
 
-## OTOC OPTMIZED SPEED
+### (3.2) INFTY TEMPERATURE OTOCS
 
+# OTOC OPTMIZED SPEED
 def OTOC_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     basis = np.complex64(basis, order = 'F')
     V = np.complex64(V, order = 'F')
@@ -224,8 +305,7 @@ def OTOC_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.array(otok)
     return otok
     
-## OTOC 1-Re(F) OPTMIZED SPEED - USE ONLY IF BOTH V,W hermitian+unitary
-
+# OTOC 1-Re(F) OPTMIZED SPEED - USE ONLY IF V,W ARE BOTH UNITARY & HERMITIAN
 def OTOCF_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     basis = np.complex64(basis, order = 'F')
     V = np.complex64(V, order = 'F')
@@ -256,8 +336,7 @@ def OTOCF_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.array(otok)
     return otok
     
-## OTOC SLOW (IF HIGHER PRECISION REQUIRED)
-
+# OTOC SLOW (IF HIGHER PRECISION REQUIRED)
 def OTOC_infty(V,W,ener,basis,N,dt,t0,ortho):
     dim = len(ener)
     if ortho == True:
@@ -285,8 +364,7 @@ def OTOC_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.array(otok)
     return otok
 
-## OTOC 1-F SLOW (IF HIGHER PRECISION REQUIRED)
-
+# OTOC 1-Re(F) SLOW (IF HIGHER PRECISION REQUIRED) - USE ONLY IF V,W ARE BOTH UNITARY & HERMITIAN
 def OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho):
     dim = len(ener)
     if ortho == True:
