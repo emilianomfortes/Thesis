@@ -216,7 +216,7 @@ def OTOC(V,W,ener,basis,N,dt,t0,beta,ortho):
     mm1 = np.zeros((dim,dim),dtype=complex)
     ensemblemedio = dim
     ensemble = np.identity(dim,dtype=complex)
-    if beta =! 0:
+    if beta != 0:
         for i in range(0,dim):
             ensemble[i][i] = np.exp(-beta*ener[i])
         ensemblemedio = np.abs(np.matrix.trace(ensemble))
@@ -224,7 +224,6 @@ def OTOC(V,W,ener,basis,N,dt,t0,beta,ortho):
     Udagger = np.zeros((dim,dim),dtype=complex) # U*   
     for count0 in range(0,N):
         tie = count0*dt+t0
-        tiempo.append(tie)
         for count1 in range(0,dim):
             U[count1][count1] = np.exp(-1j*tie*ener[count1])
             Udagger[count1][count1] = np.exp(1j*tie*ener[count1])
@@ -252,7 +251,7 @@ def OTOCF(V,W,ener,basis,N,dt,t0,beta,ortho):
     mm1 = np.zeros((dim,dim),dtype=complex)
     ensemblemedio = dim
     ensemble = np.identity(dim,dtype=complex)
-    if beta =! 0:
+    if beta != 0:
         for i in range(0,dim):
             ensemble[i][i] = np.exp(-beta*ener[i])
         ensemblemedio = np.abs(np.matrix.trace(ensemble))
@@ -260,7 +259,6 @@ def OTOCF(V,W,ener,basis,N,dt,t0,beta,ortho):
     Udagger = np.zeros((dim,dim),dtype=complex) # U*   
     for count0 in range(0,N):
         tie = count0*dt+t0
-        tiempo.append(tie)
         for count1 in range(0,dim):
             U[count1][count1] = np.exp(-1j*tie*ener[count1])
             Udagger[count1][count1] = np.exp(1j*tie*ener[count1])
