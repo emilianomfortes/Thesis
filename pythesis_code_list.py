@@ -1,11 +1,15 @@
 import numpy as np
 from scipy.linalg import blas as FB
+import math
+from scipy.optimize import curve_fit
+
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
+#(4) - STATISTICS OPERATIONS
 
 #----------------  (1) BINARY OPERATIONS  ----------------#
 #Translations from fortran --> python
@@ -389,4 +393,39 @@ def OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho):
         otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
     otok = np.array(otok)
     return otok
+
+#----------------  (4) STATISTICS OPERATIONS  ----------------#
+
+# BRODY DISTRIBUTION 
+def Brody_distribution(s,B):
+    bebi = (math.gamma(((B+2)/(B+1)))) ** (B+1)
+    return (B+1)*bebi*(s**B) * np.exp(-bebi*(s**(B+1)))
+
+# Adjusts the Brody parameter to a discrete distribution of energy "yyy" separated in an amount bins "beens" (Recommended beens='auto')
+def brody_param(yyy,beens):
+    med1=0
+    for count2 in range(0,len(yyy)):
+        med1=med1+yyy[count2]
+    med1=med1/len(yyy)
+    s1=0
+    for count2 in range(0,len(yyy)):
+        s1=s1+(yyy[count2]-med1)**2
+    
+    s1=np.sqrt(s1/len(yyy))
+    con1=1./(np.sqrt(2.*np.pi)*s1)
+    xs3 = np.linspace(yyy[0], yyy[len(yyy)-1], 100)
+    nt=100
+    de=[]
+    nsaco=30
+    for count2 in range(0+nsaco,len(yyy)-1-nsaco):
+        de.append((yyy[count2+1]-yyy[count2])*(len(yyy)*con1*np.exp(-(yyy[count2]-med1)**2/(2.*s1**2))))
+    datos, binsdata = np.histogram(de,bins=beens,normed=True)
+    prueba = binsdata
+    deltilla = prueba[1]-prueba[0]
+    pruebas = np.zeros(len(prueba)-1)
+    for lau in range(1,len(prueba)):
+        pruebas[lau-1] = lau * deltilla
+    brody_parameter, pcov = curve_fit(Brody_distribution, pruebas, datos)
+    return brody_parameter
+
 
