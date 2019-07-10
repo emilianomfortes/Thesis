@@ -10,6 +10,7 @@ from scipy.optimize import curve_fit
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
 #(4) - STATISTICS OPERATIONS
+#(5) - MISCELLANEA CODE
 
 #----------------  (1) BINARY OPERATIONS  ----------------#
 #Translations from fortran --> python
@@ -441,3 +442,22 @@ def r_chaometer(ener,plotadjusted):
         ra = (ra -0.3863) / (-0.3863+0.5307)
     return ra
     
+#----------------  (5) MISCELLANEA CODE  ----------------#
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
