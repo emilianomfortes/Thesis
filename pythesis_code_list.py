@@ -428,4 +428,16 @@ def brody_param(yyy,beens):
     brody_parameter, pcov = curve_fit(Brody_distribution, pruebas, datos)
     return brody_parameter
 
-
+# Calcultes r parameter in the 10% center of the energy "ener" spectrum. If plotadjuste = True, returns the magnitude adjusted to Poisson = 0 or WD = 1
+def r_chaometer(ener,plotadjusted):
+    ra = np.zeros(len(ener)-2)
+    center = int(0.5*len(ener))
+    delter = int(0.1*len(ener))
+    for ti in range(len(ener)-2):
+        ra[ti] = (ener[ti+2]-ener[ti+1])/(ener[ti+1]-ener[ti])
+        ra[ti] = min(ra[ti],1.0/ra[ti])
+    ra = np.mean(ra[center-delter:center+delter])
+    if plotadjuste == True:
+        ra = (ra -0.3863) / (-0.3863+0.5307)
+    return ra
+    
