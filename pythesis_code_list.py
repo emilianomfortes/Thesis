@@ -338,6 +338,44 @@ def OTOCF_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
         otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
     otok = np.array(otok)
     return otok
+
+# BOTH OTOCS 1 and 2 (REQUIRES A MORE DETAILED DESCRIPTION)
+def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
+    basis = np.complex64(basis, order = 'F')
+    V = np.complex64(V, order = 'F')
+    W = np.complex64(W, order = 'F')
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    S0 = FB.cgemm(1,V,basis)
+    S0 = FB.cgemm(1,basist,S0)
+    S = FB.cgemm(1,W,basis)
+    S = FB.cgemm(1,basist,S)
+    mm = np.zeros((dim,dim),dtype="complex64",order='F')
+    mm1 = np.zeros((dim,dim),dtype="complex64",order='F')
+    mm2 = np.zeros((dim,dim),dtype="complex64",order='F')
+    otok1 = np.zeros(N,dtype = "float32")
+    otok2 = np.zeros(N,dtype = "float32")
+    U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mm = FB.cgemm(1,S0,U)
+        mm1= FB.cgemm(1,Udagger,mm) #S0(t)
+        mm2 = FB.cgemm(1,mm1,mm1) # S0(t) S0(t)
+        mm2 = FB.cgemm(1,mm2,S) # S0(t) S0(t) S
+        mm2 = FB.cgemm(1,S,mm2) # S S0(t) S0(t) S
+        mm = FB.cgemm(1,mm1,S) #S0(t) S
+        mm = FB.cgemm(1,mm,mm) #S0(t) S S0(t) S
+        otok1[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real #otok1 = 1 - Re [Tr(S0(t) S S0(t) S)]/D
+        otok2[ti] = np.matrix.trace(mm2)/len(ener) #otok2 = Tr(S S0(t) S0(t) S)/D
+    otok1 = np.array(otok1)
+    otok2 = np.array(otok2)
+    return otok1, otok2
     
 # OTOC SLOW (IF HIGHER PRECISION REQUIRED)
 def OTOC_infty(V,W,ener,basis,N,dt,t0,ortho):
