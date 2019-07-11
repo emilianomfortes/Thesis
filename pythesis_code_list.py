@@ -359,6 +359,7 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     mm2 = np.zeros((dim,dim),dtype="complex64",order='F')
     otok1 = np.zeros(N,dtype = "float32")
     otok2 = np.zeros(N,dtype = "float32")
+    tiempo = np.linspace(t0,N*dt,N)
     U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
     for ti in range(0,N):
