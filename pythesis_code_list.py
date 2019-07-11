@@ -2,6 +2,7 @@ import numpy as np
 from scipy.linalg import blas as FB
 import math
 from scipy.optimize import curve_fit
+import timeit
 
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
@@ -361,6 +362,7 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
     for ti in range(0,N):
+        #start_time = timeit.default_timer()
         for c1 in range(0,dim):
             U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
             Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
@@ -373,6 +375,8 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
         mm = FB.cgemm(1,mm,mm) #S0(t) S S0(t) S
         otok1[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real #otok1 = 1 - Re [Tr(S0(t) S S0(t) S)]/D
         otok2[ti] = np.matrix.trace(mm2)/len(ener) #otok2 = Tr(S S0(t) S0(t) S)/D
+        #elapsed = timeit.default_timer() - start_time
+        #print(elapsed)   
     otok1 = np.array(otok1)
     otok2 = np.array(otok2)
     return otok1, otok2
