@@ -62,7 +62,7 @@ def S_yi(pos_i,sites):
     for i in range(dim):
         for j in range(dim):
             if i == estados2[j]:
-                S[i,j] = S[i,j]+a[j]
+                S[i,j] = S[i,j]+a[i]
     return S
     
 def S_zi(pos_i,sites):
