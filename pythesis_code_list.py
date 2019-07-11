@@ -69,7 +69,7 @@ def S_zi(pos_i,sites):
     dim = 2**sites
     S = np.zeros((dim,dim),dtype=complex)
     for i in range(dim):
-        if btest(i,pos_i) == True:
+        if btest(i,pos_i) == False:
             S[i,i] = 1
         else:
             S[i,i] = -1
