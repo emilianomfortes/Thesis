@@ -1,8 +1,10 @@
 import numpy as np
+import scipy
 from scipy.linalg import blas as FB
 import math
 from scipy.optimize import curve_fit
 import timeit
+import matplotlib.pyplot as plt
 
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
@@ -10,7 +12,7 @@ import timeit
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
-#(4) - STATISTICS OPERATIONS
+#(4) - CHAOS OPERATIONS
 #(5) - MISCELLANEA CODE
 
 #----------------  (1) BINARY OPERATIONS  ----------------#
@@ -375,7 +377,7 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
         mm = FB.cgemm(1,mm1,S) #S0(t) S
         mm = FB.cgemm(1,mm,mm) #S0(t) S S0(t) S
         otok1[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real #otok1 = 1 - Re [Tr(S0(t) S S0(t) S)]/D
-        otok2[ti] = np.matrix.trace(mm2)/len(ener) #otok2 = Tr(S S0(t) S0(t) S)/D
+        otok2[ti] = np.matrix.trace(mm2).real/len(ener) #otok2 = Tr(S S0(t) S0(t) S)/D
         #elapsed = timeit.default_timer() - start_time
         #print(elapsed)   
     otok1 = np.array(otok1)
@@ -438,8 +440,43 @@ def OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.array(otok)
     return otok
 
-#----------------  (4) STATISTICS OPERATIONS  ----------------#
+#----------------  (4) CHAOS OPERATIONS  ----------------#
 
+#Level statistics/ NN level spacing distribution
+def NN_lsd(yyy,beens,named):
+    med1=0
+    for count2 in range(0,len(yyy)):
+        med1=med1+yyy[count2]        
+    med1=med1/len(yyy)    
+    s1=0
+    for count2 in range(0,len(yyy)):
+        s1=s1+(yyy[count2]-med1)**2    
+    s1=np.sqrt(s1/len(yyy))
+    con1=1./(np.sqrt(2.*np.pi)*s1)
+    xs3 = np.linspace(yyy[0], yyy[len(yyy)-1], 100)
+    fig = plt.figure()
+    plt.subplot(211)
+    plt.title(r"$Level statistics$")
+    plt.hist(yyy,bins=151,normed=1,histtype='step',label="Statistics")
+    plt.plot(xs3,con1*np.exp(-(xs3-med1)**2/(2.*s1**2)))    
+    nt=100    
+    xs = np.linspace(0, 4, nt)
+    ys=np.pi*0.5*xs*np.exp(-0.25*np.pi*xs**2)
+    ysp=np.exp(-xs)    
+    yy=np.linspace(1,len(yyy),len(yyy))    
+    de=[]
+    nsaco=30
+    for count2 in range(0+nsaco,len(yyy)-1-nsaco):
+        de.append((yyy[count2+1]-yyy[count2])*(len(yyy)*con1*np.exp(-(yyy[count2]-med1)**2/(2.*s1**2))))
+    xs3 = np.linspace(0, 4, 100)
+    plt.subplot(212)
+    plt.hist(de,bins=beens,normed=1,histtype='step',label="NN Level Spacing")
+    plt.plot(xs,ys,label='Wigner')
+    plt.plot(xs,ysp,label='Poisson')
+    plt.legend(loc='best',fontsize = 'small')
+    plt.savefig(str(named)+'.pdf')
+    plt.close(fig)
+    
 # BRODY DISTRIBUTION 
 def Brody_distribution(s,B):
     bebi = (math.gamma(((B+2)/(B+1)))) ** (B+1)
@@ -469,10 +506,10 @@ def brody_param(yyy,beens):
     pruebas = np.zeros(len(prueba)-1)
     for lau in range(1,len(prueba)):
         pruebas[lau-1] = lau * deltilla
-    brody_parameter, pcov = curve_fit(Brody_distribution, pruebas, datos)
-    return brody_parameter
+    brody_paramet, pcov = curve_fit(Brody_distribution, pruebas, datos)
+    return brody_paramet
 
-# Calcultes r parameter in the 10% center of the energy "ener" spectrum. If plotadjuste = True, returns the magnitude adjusted to Poisson = 0 or WD = 1
+# Calcultes r parameter in the 10% center of the energy "ener" spectrum. If plotadjusted = True, returns the magnitude adjusted to Poisson = 0 or WD = 1
 def r_chaometer(ener,plotadjusted):
     ra = np.zeros(len(ener)-2)
     center = int(0.5*len(ener))
@@ -481,10 +518,33 @@ def r_chaometer(ener,plotadjusted):
         ra[ti] = (ener[ti+2]-ener[ti+1])/(ener[ti+1]-ener[ti])
         ra[ti] = min(ra[ti],1.0/ra[ti])
     ra = np.mean(ra[center-delter:center+delter])
-    if plotadjuste == True:
+    if plotadjusted == True:
         ra = (ra -0.3863) / (-0.3863+0.5307)
     return ra
-    
+
+# Returns OTOC's Spectarl IPR and Standard deviation.
+def OTOC_chaotic_measures(tiempo,otoks,lentest0,lentest,dt):
+    lentest = int(lentest)
+    lentest0 = int(lentest0/dt)
+    distri = 1
+    otok_osc = otoks[lentest0:lentest] - np.mean(otoks[lentest0:lentest])
+    std = np.std(otok_osc)
+    fft_osc = np.fft.rfft(otok_osc,norm='ortho')
+    freq = np.fft.rfftfreq(len(otok_osc), tiempo[1]-tiempo[0])
+    dx = freq[1]-freq[0]
+    b = 0.5*len(freq)-1
+    distri= scipy.integrate.simps(np.abs(fft_osc)**2,freq)
+    sipr_simpson= scipy.integrate.simps(np.abs(fft_osc)**4/(distri**2),freq)
+    distri = 0
+    for i in range(len(freq)):
+        distri = distri + dx * (abs(fft_osc[i])**2)
+    for i in range(len(freq)):
+        sipr_df = sipr_df + dx * (abs(fft_osc[i])**4/(distri**2)) 
+    sipr_df = 1/sipr_df
+    sipr_simpson = 1/sipr_simpson
+    return sipr_simpson, std
+
+
 #----------------  (5) MISCELLANEA CODE  ----------------#
 
 def unit_vector(vector):
