@@ -28,3 +28,67 @@ function set_bit(v,index,x)
     end
     return v
 end
+
+#----------------  (2) SPIN OPERATIONS  ----------------#
+
+# Pauli at site operators
+
+function S_xi(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    estados2 = zeros(Int64,dim)
+    for i=0:dim-1
+        if btest(i,pos_i) == true
+            estados2[i+1] = set_bit(i,pos_i,0)
+        else
+            estados2[i+1] = set_bit(i,pos_i,true)
+        end
+    end
+    for i=0:dim-1
+        for j=0:dim-1
+            if i == estados2[j+1]
+                S[i+1,j+1] = S[i+1,j+1]+1
+            end
+        end
+    end
+    return S
+end
+
+function S_yi(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    estados2 = zeros(Int64,dim)
+    a = zeros(ComplexF64,dim)
+    for i=0:dim-1
+        if btest(i,pos_i) == true
+            estados2[i+1] = set_bit(i,pos_i,0)
+            a[i+1] = 1im
+        else
+            estados2[i+1] = set_bit(i,pos_i,true)
+            a[i+1] = -1im
+        end
+    end
+    for i=0:dim-1
+        for j=0:dim-1
+            if i == estados2[j+1]
+                S[i+1,j+1] = S[i+1,j+1]+a[i+1]
+            end
+        end
+    end
+    return S
+end
+
+function S_zi(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        if btest(i,pos_i) == false
+            S[i+1,i+1] = 1
+        else
+            S[i+1,i+1] = -1
+        end
+    end
+    return S
+end
+
+
