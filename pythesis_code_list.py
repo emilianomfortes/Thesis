@@ -32,7 +32,7 @@ def set_bit(v, index, x): #if x=0 --> ibclr / if x=1 --> ibset
   return v
 
 #ibits
-def pIBITS(num,pos,lens): 
+def ibits(num,pos,lens): 
   
      # convert number into binary first 
      binary = bin(num) 
