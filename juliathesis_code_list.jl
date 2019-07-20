@@ -91,4 +91,53 @@ function S_zi(pos_i,sites)
     return S
 end
 
+#Entire spin direction operators
+
+function S_x(sites)
+    dim = 2^sites
+    H = zeros(ComplexF64,dim,dim)
+    for l=1:dim
+        for j=0:sites-1
+            if btest(l-1,j) == true
+                hh = set_bit(l-1,j,0) + 1
+            else
+                hh = set_bit(l-1,j,true) + 1
+            end             
+            H[l,hh] = H[l,hh] + 1
+        end
+    end
+    return H
+end
+
+function S_y(sites)
+    dim = 2^sites
+    H = zeros(ComplexF64,dim,dim)
+    for l=1:dim
+        for j=0:sites-1
+            if btest(l-1,j) == true
+                hh = set_bit(l-1,j,0) + 1
+                H[l,hh] = H[l,hh] + 1im
+            else
+                hh = set_bit(l-1,j,true) + 1
+                H[l,hh] = H[l,hh] - 1im
+            end             
+        end
+    end
+    return H
+end
+
+function S_z(sites)
+    dim = 2^sites
+    H = zeros(ComplexF64,dim,dim)
+    for l=1:dim
+        for j=0:sites-1
+            if btest(l-1,j) == true
+                H[l,l]=H[l,l] - 1
+            else
+                H[l,l]=H[l,l] +1
+            end             
+        end
+    end
+    return H
+end
 
