@@ -29,6 +29,23 @@ function set_bit(v,index,x)
     return v
 end
 
+
+struct BitStrFun2{L} # L is the parameter which gets the string length
+    value::Int           
+    function BitStrFun2(str::String) where {L}
+        value = parse(Int, string("0b", str))
+        nbits = length(str)
+        return new{nbits}(value)
+     end
+end
+
+#ibits fortran function
+function ibits(num,pos,lens)
+    binary = Base.reverse(Base.bitstring(num))
+    return BitStrFun2(Base.reverse(binary[pos+1:pos+lens+1])).value
+end
+
+
 #----------------  (2) SPIN OPERATIONS  ----------------#
 
 # Pauli at site operators
