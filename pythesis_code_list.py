@@ -31,6 +31,24 @@ def set_bit(v, index, x): #if x=0 --> ibclr / if x=1 --> ibset
     v |= mask
   return v
 
+#ibits
+def pIBITS(num,pos,lens): 
+  
+     # convert number into binary first 
+     binary = bin(num) 
+  
+     # remove first two characters 
+     binary = binary[2:][::-1] 
+  
+     end = len(binary) - pos 
+     start = end - lens + 1
+  
+     # extract k  bit sub-string 
+     kBitSubStr = binary[pos : pos+lens][::-1] 
+     #kBitSubStr = binary[len(binary)-pos-1-lens:len(binary)-pos-1]
+     # convert extracted sub-string into decimal again 
+     return (int(kBitSubStr,2)) 
+
 #----------------  (2) SPIN OPERATIONS  ----------------#
 
 # Pauli at site operators
