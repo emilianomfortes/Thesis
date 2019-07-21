@@ -1,6 +1,8 @@
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
+##(2.1) - SPIN SITE OPERATIONS
+##(2.2) - SYMMETRIES
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
@@ -42,11 +44,12 @@ end
 #ibits fortran function
 function ibits(num,pos,lens)
     binary = Base.reverse(Base.bitstring(num))
-    return BitStrFun2(Base.reverse(binary[pos+1:pos+lens+1])).value
+    return BitStrFun2(Base.reverse(binary[pos+1:pos+1+lens-1])).value
 end
 
-
 #----------------  (2) SPIN OPERATIONS  ----------------#
+
+##(2.1) SPIN SITE OPERATIONS
 
 # Pauli at site operators
 
@@ -158,3 +161,33 @@ function S_z(sites)
     return H
 end
 
+##(2.2) SYMMETRIES
+
+#S_z conservation - fixed spin up subspaces
+
+function sz_subspace(sites,n_partic)
+    label_state = 0
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    dim2 = 2^sites
+    states = zeros(Int64,dim)
+    flag = zeros(Int64,dim2)
+    for i=0:dim2-1
+        k=0
+        j=0
+        tusi=0
+        while ((k<=n_partic) & (j<=sites-1))
+            k+=ibits(i,j,1)
+            j+=1
+            #println("k, n_partic = $k $n_partic")
+            #println("j, sites-1 = $j $(sites-1)")
+            #println("$k")
+        end #while1
+        #println("--------")
+        if k==n_partic
+            label_state+=1
+            states[label_state] = i
+            flag[i+1] = label_state
+        end #if
+    end #for
+    return states, flag
+end #function
