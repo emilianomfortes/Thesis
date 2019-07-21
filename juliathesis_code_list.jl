@@ -47,7 +47,7 @@ function ibits(num,pos,lens)
     return BitStrFun2(Base.reverse(binary[pos+1:pos+1+lens-1])).value
 end
 
-#ieor
+#ieor - I LEAVE IT HERE BECAUSE IT TOOK ME AN HOUR TO CODE IT, BUT ITS AN IMPLICIT FUNCTION " ⊻ " (IE 1⊻4 = 5)
 function ieor(num1,num2)
     a = length(Base.digits(num1, base=2))
     b = length(Base.digits(num2, base=2))
