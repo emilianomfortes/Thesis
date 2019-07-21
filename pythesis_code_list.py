@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
+##(2.1) - SPIN SITE OPERATIONS
+##(2.2) - SYMMETRIES
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
@@ -39,10 +41,8 @@ def ibits(num,pos,lens):
   
      # remove first two characters 
      binary = binary[2:][::-1] 
-  
-     end = len(binary) - pos 
-     start = end - lens + 1
-  
+     for n in range(pos+2):
+         binary += str(0)  
      # extract k  bit sub-string 
      kBitSubStr = binary[pos : pos+lens][::-1] 
      #kBitSubStr = binary[len(binary)-pos-1-lens:len(binary)-pos-1]
@@ -50,6 +50,8 @@ def ibits(num,pos,lens):
      return (int(kBitSubStr,2)) 
 
 #----------------  (2) SPIN OPERATIONS  ----------------#
+
+##(2.1) SPIN SITE OPERATIONS
 
 # Pauli at site operators
 
@@ -202,7 +204,32 @@ def S_z(sites): # Entire S_z operator
                 hh = set_bit(l-1,j,0) + 1
                 H[l-1,hh-1]=H[l-1,hh-1] + 1
     return H
-    
+
+### (2.2) SYMMETRIES
+
+#S_z conservation spin up subspaces
+def sz_subspace(sites,n_partic):
+    label_state = 0
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    dim2 = 2**sites
+    states = np.zeros(dim)
+    flag = np.zeros(dim2)
+    for i in range(dim2-1):
+        k=0
+        j=0
+        while k<=n_partic and j<=sites-1:
+            k+=ibits(i,j,1)
+            j+=1
+            #print(k)
+        #print("-----")
+        if k==n_partic:
+            #print("funco en k,j=",k,j)
+            label_state+=1
+            states[label_state-1] = i
+            flag[i] = label_state
+    return states, flag
+
+
 def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE REHACERLO!!!!!! ESTA MAL! (PERO NO MUY MAL)
     dim = 2 ** sites
     identity = np.zeros((dim,dim),dtype=complex)
