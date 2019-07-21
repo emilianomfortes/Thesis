@@ -174,7 +174,6 @@ function sz_subspace(sites,n_partic)
     for i=0:dim2-1
         k=0
         j=0
-        tusi=0
         while ((k<=n_partic) & (j<=sites-1))
             k+=ibits(i,j,1)
             j+=1
