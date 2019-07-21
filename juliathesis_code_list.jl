@@ -47,6 +47,29 @@ function ibits(num,pos,lens)
     return BitStrFun2(Base.reverse(binary[pos+1:pos+1+lens-1])).value
 end
 
+#ieor
+function ieor(num1,num2)
+    a = length(Base.digits(num1, base=2))
+    b = length(Base.digits(num2, base=2))
+    lenti = max(a,b)
+    print(" len(num1) = $a and len(num2) = $b")
+    if lenti == a
+        zz = zeros(Int,lenti)
+        zz[1:b] = Base.digits(num2,base=2)
+        println(zz)
+        numeronuevo = abs.(zz-Base.digits(num1,base=2))
+    else
+        zz = zeros(Int,lenti)
+        zz[1:a] = Base.digits(num1,base=2)
+        println(zz)
+        numeronuevo = abs.(zz-Base.digits(num2,base=2))
+    end
+    println(numeronuevo)
+    println(join(numeronuevo))
+    Base.parse(Int,join(Base.reverse(numeronuevo)),base=2)
+end
+
+
 #----------------  (2) SPIN OPERATIONS  ----------------#
 
 ##(2.1) SPIN SITE OPERATIONS
