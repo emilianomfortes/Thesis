@@ -197,6 +197,7 @@ function sz_subspace(sites,n_partic)
     for i=0:dim2-1
         k=0
         j=0
+        tusi=0
         while ((k<=n_partic) & (j<=sites-1))
             k+=ibits(i,j,1)
             j+=1
@@ -213,3 +214,128 @@ function sz_subspace(sites,n_partic)
     end #for
     return states, flag
 end #function
+
+
+function sz_subspace_spin_interactions(sites,n_partic,neig,BC)
+    states, flag = sz_subspace(sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    Sx = zeros(ComplexF64,dim,dim)
+    Sy = zeros(ComplexF64,dim,dim)
+    Sz = zeros(ComplexF64,dim,dim)
+    Cx = 1
+    Cy = 1
+    Cz = 1
+    t1 = 0
+    kk = 0
+    println(flag)
+    for i=1:dim
+        for n=0:sites-1
+            if ((n<=sites-1-neig) | (BC=="perodic"))
+                stepi = ibits(states[i],n,1) + ibits(states[i], (n+neig)%(sites),1)
+                println("stepi = $stepi")
+                if (stepi == 1)
+                    kk = ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1)
+                    t1 = (states[i])⊻(set_bit(0,n,true))
+                    println("first t1 = $t1")
+                    t1 = flag[(t1)⊻(set_bit(0, n+neig % sites, true))]
+                    println("t1 = $t1")
+                    #Sy[i,t1+1]+=-Cy * (-1)^(kk)
+                    #Sx[i,t1+1]+= Cx
+                end #if1
+                Sz[i,i]+= Cz * (-1)^(kk)
+            end #if2
+        end #for2
+    end #for
+    return Sx + Sy + Sz
+end #function
+
+function cabeza_subspace(sites,n_partic)
+    states, flag = sz_subspace(sites,n_partic)
+    return S_zzij()
+end
+
+function sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = zeros(Int64,dim)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == true
+            estados2[i+1] = set_bit(states[i+1],pos_i,0)
+        else
+            estados2[i+1] = set_bit(states[i+1],pos_i,true)
+        end
+    end
+    for i=0:dim-1
+        if btest(estados2[i+1],pos_j) == true
+            estados2[i+1] = set_bit(estados2[i+1],pos_j,0)
+        else
+            estados2[i+1] = set_bit(estados2[i+1],pos_j,true)
+        end
+    end
+    for i=0:dim-1
+        for j=0:dim-1
+            if states[i+1] == estados2[j+1]
+                S[i+1,j+1] = S[i+1,j+1]+1
+            end
+        end
+    end
+    return S
+end
+
+function sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = zeros(Int64,dim)
+    a = zeros(ComplexF64,dim)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == true
+            estados2[i+1] = set_bit(states[i+1],pos_i,0)
+            a[i+1] = 1im
+        else
+            estados2[i+1] = set_bit(states[i+1],pos_i,true)
+        a[i+1] = -1im
+        end
+    end
+    for i=0:dim-1
+        if btest(estados2[i+1],pos_j) == true
+            estados2[i+1] = set_bit(estados2[i+1],pos_j,0)
+            a[i+1] = a[i+1] * 1im
+        else
+            estados2[i+1] = set_bit(estados2[i+1],pos_j,true)
+            a[i+1] = -a[i+1]*1im
+        end
+    end
+    for i=0:dim-1
+        for j=0:dim-1
+            if states[i+1] == estados2[j+1]
+                S[i+1,j+1] = S[i+1,j+1]+a[i+1]
+            end
+        end
+    end
+    return S
+end
+
+function sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == true
+            if btest(states[i+1],pos_j) == true
+                S[i+1,i+1]+= 1
+            else
+                S[i+1,i+1]+= -1
+            end
+        else
+            if btest(states[i+1],pos_j) == true
+                S[i+1,i+1]+= -1
+            else
+                S[i+1,i+1]+= 1
+            end
+        end
+    end
+    return S
+end
+
