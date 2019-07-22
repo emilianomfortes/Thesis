@@ -212,7 +212,7 @@ def sz_subspace(sites,n_partic):
     label_state = 0
     dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
     dim2 = 2**sites
-    states = np.zeros(dim)
+    states = np.zeros(dim,dtype=int)
     flag = np.zeros(dim2)
     for i in range(dim2-1):
         k=0
@@ -229,6 +229,106 @@ def sz_subspace(sites,n_partic):
             flag[i] = label_state
     return states, flag
 
+def sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic):
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = np.zeros(dim,dtype=int)
+    for i in range(dim):
+        if btest(states[i],pos_i) == True:
+            estados2[i] = set_bit(states[i],pos_i,0)
+        else:
+            estados2[i] = set_bit(states[i],pos_i,1)
+    for i in range(dim):
+        if btest(estados2[i],pos_j) == True:
+            estados2[i] = set_bit(estados2[i],pos_j,0)
+        else:
+            estados2[i] = set_bit(estados2[i],pos_j,1)
+    for i in range(dim):
+        for j in range(dim):
+            if states[i] == estados2[j]:
+                S[i,j] = S[i,j]+1
+    return S
+
+def sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic):
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = np.zeros(dim,dtype=int)
+    a = np.zeros(dim,dtype=complex)
+    for i in range(dim):
+        if btest(states[i],pos_i) == True:
+            estados2[i] = set_bit(states[i],pos_i,0)
+	    a[i] = 1j
+        else:
+            estados2[i] = set_bit(states[i],pos_i,1)
+	    a[i] = -1j
+    for i in range(dim):
+        if btest(estados2[i],pos_j) == True:
+            estados2[i] = set_bit(estados2[i],pos_j,0)
+            a[i] = a[i]*1j
+        else:
+            estados2[i] = set_bit(estados2[i],pos_j,1)
+	    a[i] = -a[i]*1j
+    for i in range(dim):
+        for j in range(dim):
+            if states[i] == estados2[j]:
+                S[i,j] = S[i,j] + a[i]
+    return S
+
+def sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic):
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    for i in range(dim):
+        if btest(states[i],pos_i) == True:
+            if btest(states[i],pos_j) == True:            
+	    	S[i,i]+=1
+            else:
+            	S[i,i]+=-1
+	else:
+	    if btest(states[i],pos_j) == True:            
+	    	S[i,i]+=-1
+            else:
+            	S[i,i]+=1
+    return S
+
+def sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cxx,Cyy,Czz):
+    states, flag = sz_subspace(sites,n_partic)    
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    Sx = np.zeros((dim,dim),dtype=complex)
+    Sy = np.zeros((dim,dim),dtype=complex)
+    Sz = np.zeros((dim,dim),dtype=complex)
+    t1 = 0
+    kk = 0
+    if (type(Cxx) == float) | (type(Cxx) == int):
+	Cx = np.zeros(dim,dtype=float)+Cxx
+    else:
+	Cx = Cxx
+    if (type(Cyy) == float) | (type(Cyy) == int):
+	Cy = np.zeros(dim,dtype=float)+Cyy
+    else:
+	Cy = Cyy
+    if (type(Czz) == float) | (type(Czz) == int):
+	Cz = np.zeros(dim,dtype=float)+Czz
+    else:
+	Cz = Czz
+    print(flag)
+    for i in range(1,dim+1):
+        for n in range(sites-1):
+            if ((n<=sites-1-neig) | (BC=="perodic")):
+                stepi = ibits(states[i-1],n,1) + ibits(states[i-1], (n+neig)%(sites),1)
+                print("stepi = ",stepi)
+                if (stepi == 1):
+                    kk = ibits(states[i-1],n,1) + ibits(states[i-1],n+neig % sites,1)
+                    t1 = (states[i-1])^(set_bit(0,n,1))
+                    #print("first t1 = $t1")
+                    t1 = int(flag[(t1)^(set_bit(0, n+neig % sites, 1))] )
+                    #print("t1 = $t1")
+                    Sy[i-1,t1-1]+= -Cy[i-1] * (-1)**(kk)
+                    Sx[i-1,t1-1]+= Cx[i-1]
+                Sz[i-1,i-1]+= Cz[i-1] * (-1)**(ibits(states[i-1],n,1) + ibits(states[i-1],n+neig % sites,1))
+    return Sx + Sy + Sz
 
 def Parity(sites): # Returns the parity operator in the S_z base #### HAY QUE REHACERLO!!!!!! ESTA MAL! (PERO NO MUY MAL)
     dim = 2 ** sites
