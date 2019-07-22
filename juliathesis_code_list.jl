@@ -228,21 +228,25 @@ function sz_subspace_spin_interactions(sites,n_partic,neig,BC)
     t1 = 0
     kk = 0
     println(flag)
+    println(typeof(flag))
     for i=1:dim
-        for n=0:sites-1
+        for n=0:sites-2
             if ((n<=sites-1-neig) | (BC=="perodic"))
                 stepi = ibits(states[i],n,1) + ibits(states[i], (n+neig)%(sites),1)
                 println("stepi = $stepi")
                 if (stepi == 1)
-                    kk = ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1)
-                    t1 = (states[i])⊻(set_bit(0,n,true))
-                    println("first t1 = $t1")
-                    t1 = flag[(t1)⊻(set_bit(0, n+neig % sites, true))]
+                    kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
+                    #t1 = (states[i])⊻(set_bit(0,n,true))
+                    #println("first t1 = $t1")
+                    t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
+                    t1 = flag[t1+1]
+                    #t1 = flag[t1]
+                    #println(typeof(flag))
                     println("t1 = $t1")
-                    #Sy[i,t1+1]+=-Cy * (-1)^(kk)
-                    #Sx[i,t1+1]+= Cx
+                    Sy[i,t1]+=-Cy * (-1)^(kk)
+                    Sx[i,t1]+= Cx                    
                 end #if1
-                Sz[i,i]+= Cz * (-1)^(kk)
+                Sz[i,i]+= Cz * (-1)^(ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1))
             end #if2
         end #for2
     end #for
