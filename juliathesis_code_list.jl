@@ -186,14 +186,11 @@ end
 
 # Neighbour interactionss xx,yy,zz all in one for speed
 
-function spin_interactions(sites,neig,BC)
+function spin_interactions(sites,neig,BC,Cx,Cy,Cz)
     dim = 2^sites
     Sx = zeros(ComplexF64,dim,dim)
     Sy = zeros(ComplexF64,dim,dim)
     Sz = zeros(ComplexF64,dim,dim)
-    Cx = 1
-    Cy = 1
-    Cz = 1
     t1 = 0
     kk = 0
     for i=0:dim-1
@@ -393,4 +390,12 @@ function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
         otoc[ti] = 1 - Base.real((tr(mm)))/dim
     end#for
     return otoc,tiempo
+end #function
+
+#
+
+function Tilted_model(sites,J,B,tita)
+    H = .25*J*spin_interactions(sites,1,"OPEN",0,0,1)
+    H+= B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
+    return eigvals(H), eigvecs(H)
 end #function
