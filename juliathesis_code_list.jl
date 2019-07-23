@@ -184,6 +184,33 @@ function S_z(sites)
     return H
 end
 
+# Neighbour interactionss xx,yy,zz all in one for speed
+
+function spin_interactions(sites,neig,BC)
+    dim = 2^sites
+    Sx = zeros(ComplexF64,dim,dim)
+    Sy = zeros(ComplexF64,dim,dim)
+    Sz = zeros(ComplexF64,dim,dim)
+    Cx = 1
+    Cy = 1
+    Cz = 1
+    t1 = 0
+    kk = 0
+    for i=0:dim-1
+        for n=0:sites-2
+            if ((n<=sites-1-neig) | (BC=="perodic"))
+                kk = ibits(i,n,1) + ibits(i,(n+neig)%(sites),1)
+                t1 = ((i)⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
+                println("t1 = $t1")
+                Sy[i+1,t1+1]+=-Cy * (-1)^(kk)
+                Sx[i+1,t1+1]+= Cx                    
+                Sz[i+1,i+1]+= Cz * (-1)^(kk)
+            end #if
+        end #for2
+    end #for
+    return Sx + Sy + Sz
+end #function-
+
 ##(2.2) SYMMETRIES
 
 #S_z conservation - fixed spin up subspaces
@@ -227,22 +254,14 @@ function sz_subspace_spin_interactions(sites,n_partic,neig,BC)
     Cz = 1
     t1 = 0
     kk = 0
-    println(flag)
-    println(typeof(flag))
     for i=1:dim
         for n=0:sites-2
             if ((n<=sites-1-neig) | (BC=="perodic"))
                 stepi = ibits(states[i],n,1) + ibits(states[i], (n+neig)%(sites),1)
-                println("stepi = $stepi")
                 if (stepi == 1)
                     kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
-                    #t1 = (states[i])⊻(set_bit(0,n,true))
-                    #println("first t1 = $t1")
                     t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
                     t1 = flag[t1+1]
-                    #t1 = flag[t1]
-                    #println(typeof(flag))
-                    println("t1 = $t1")
                     Sy[i,t1]+=-Cy * (-1)^(kk)
                     Sx[i,t1]+= Cx                    
                 end #if1
