@@ -143,7 +143,7 @@ def S_yyij(pos_i,pos_j,sites):
     for i in range(dim):
         for j in range(dim):
             if i == estados2[j]:
-                S[i,j] = S[i,j]+a[j]
+                S[i,j] = S[i,j]+a[i]
     return S
 
 def S_zzij(pos_i,pos_j,sites):
@@ -204,6 +204,39 @@ def S_z(sites): # Entire S_z operator
                 hh = set_bit(l-1,j,0) + 1
                 H[l-1,hh-1]=H[l-1,hh-1] + 1
     return H
+
+#%% Neighbour interactionss xx,yy,zz all in one for speed
+
+def spin_interactions(sites,neig,BC,Cxx,Cyy,Czz):  
+    dim = 2**sites
+    Sx = np.zeros((dim,dim),dtype=complex)
+    Sy = np.zeros((dim,dim),dtype=complex)
+    Sz = np.zeros((dim,dim),dtype=complex)
+    t1 = 0
+    kk = 0
+    if (type(Cxx) == float) | (type(Cxx) == int):
+	Cx = np.zeros(dim,dtype=float)+Cxx
+    else:
+	Cx = Cxx
+    if (type(Cyy) == float) | (type(Cyy) == int):
+	Cy = np.zeros(dim,dtype=float)+Cyy
+    else:
+	Cy = Cyy
+    if (type(Czz) == float) | (type(Czz) == int):
+	Cz = np.zeros(dim,dtype=float)+Czz
+    else:
+	Cz = Czz
+    for i in range(dim):
+        for n in range(sites-1):
+            if ((n<=sites-1-neig) | (BC=="perodic")):
+                kk = ibits(i,n,1) + ibits(i,n+neig % sites,1)
+                t1 = (i)^(set_bit(0,n,1))
+                t1 = t1^(set_bit(0, n+neig % sites, 1))
+		print(t1)
+                Sy[i,t1]+= -Cy[i] * (-1)**(kk)
+                Sx[i,t1]+= Cx[i]
+                Sz[i,i]+= Cz[i] * (-1)**(kk)
+    return Sx + Sy + Sz
 
 ### (2.2) SYMMETRIES
 
@@ -322,9 +355,9 @@ def sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cxx,Cyy,Czz):
                 if (stepi == 1):
                     kk = ibits(states[i-1],n,1) + ibits(states[i-1],n+neig % sites,1)
                     t1 = (states[i-1])^(set_bit(0,n,1))
-                    #print("first t1 = $t1")
+                    print(t1)
                     t1 = int(flag[(t1)^(set_bit(0, n+neig % sites, 1))] )
-                    #print("t1 = $t1")
+                    #print(t1)
                     Sy[i-1,t1-1]+= -Cy[i-1] * (-1)**(kk)
                     Sx[i-1,t1-1]+= Cx[i-1]
                 Sz[i-1,i-1]+= Cz[i-1] * (-1)**(ibits(states[i-1],n,1) + ibits(states[i-1],n+neig % sites,1))
