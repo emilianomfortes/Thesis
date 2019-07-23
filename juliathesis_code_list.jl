@@ -362,3 +362,35 @@ function sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic)
     return S
 end
 
+#
+
+function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
+    dim = length(ener)
+    if ortho == true
+        basist = transpose(basis)
+    else
+        basist = inv(basis)
+    end#if
+    ope0 = matmul(basist,V)
+    ope0 = matmul(ope0,basis)
+    ope = matmul(basist,W)
+    ope = matmul(ope,basis)
+    otoc = zeros(Float32,N)
+    mm = zeros(ComplexF64,dim,dim)
+    mm1 = zeros(ComplexF64,dim,dim)
+    U = zeros(ComplexF64,dim,dim)
+    Udag = zeros(ComplexF64,dim,dim)
+    tiempo = linspace(t0,N*dt+t0,N)
+    for ti=0:N
+        for c1=1:dim
+            U[c1,c1] = exp(-1im*tiempo[c1]*ener[c1])
+            Udag[c1,c1] = exp(1im*tiempo[c1]*ener[c1])
+        end#for2
+        mm = matmul(ope0,U)
+        mm1 = matmul(Udag,mm)
+        mm = matmul(mm1,ope)
+        mm = matmul(mm,mm)
+        otoc[ti] = 1 - Base.real((tr(mm)))/dim
+    end#for
+    return otoc,tiempo
+end #function
