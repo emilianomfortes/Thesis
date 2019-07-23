@@ -361,6 +361,15 @@ end
 
 #
 
+function Tilted_model(sites,J,B,tita)
+    H = .25*J*spin_interactions(sites,1,"OPEN",0,0,1)
+    H+= .5*B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
+    Hh = Hermitian(H)
+    e = eigvals(H)
+    ev = eigvecs(H)
+    return e, ev
+end #function
+
 function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
     dim = length(ener)
     if ortho == true
@@ -368,34 +377,29 @@ function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
     else
         basist = inv(basis)
     end#if
-    ope0 = matmul(basist,V)
-    ope0 = matmul(ope0,basis)
-    ope = matmul(basist,W)
-    ope = matmul(ope,basis)
+    ope0 = basist*V
+    ope0 = ope0*basis
+    ope = basist*W
+    ope = ope*basis
     otoc = zeros(Float32,N)
     mm = zeros(ComplexF64,dim,dim)
     mm1 = zeros(ComplexF64,dim,dim)
     U = zeros(ComplexF64,dim,dim)
     Udag = zeros(ComplexF64,dim,dim)
-    tiempo = linspace(t0,N*dt+t0,N)
-    for ti=0:N
+    tiempo = LinRange(t0,N*dt+t0,N)
+    for ti=1:N
         for c1=1:dim
-            U[c1,c1] = exp(-1im*tiempo[c1]*ener[c1])
-            Udag[c1,c1] = exp(1im*tiempo[c1]*ener[c1])
+            U[c1,c1] = exp(-1im*tiempo[ti]*ener[c1])
+            Udag[c1,c1] = exp(1im*tiempo[ti]*ener[c1])
         end#for2
-        mm = matmul(ope0,U)
-        mm1 = matmul(Udag,mm)
-        mm = matmul(mm1,ope)
-        mm = matmul(mm,mm)
+        #println(U)
+        mm = ope0*U
+        mm1 = Udag*mm
+        mm = mm1*ope
+        mm = mm*mm
+        #println(tr(mm))
         otoc[ti] = 1 - Base.real((tr(mm)))/dim
     end#for
     return otoc,tiempo
 end #function
 
-#
-
-function Tilted_model(sites,J,B,tita)
-    H = .25*J*spin_interactions(sites,1,"OPEN",0,0,1)
-    H+= B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
-    return eigvals(H), eigvecs(H)
-end #function
