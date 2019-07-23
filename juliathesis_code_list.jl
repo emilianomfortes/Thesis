@@ -2,7 +2,9 @@
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
 ##(2.1) - SPIN SITE OPERATIONS
-##(2.2) - SYMMETRIES
+##(2.2) - CHAIN MODELS
+##(2.3) - SYMMETRIES
+###(2.3.1) - S_z CONSERVATION
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
@@ -208,9 +210,46 @@ function spin_interactions(sites,neig,BC,Cx,Cy,Cz)
     return Sx + Sy + Sz
 end #function-
 
-##(2.2) SYMMETRIES
+## (2.2) CHAIN MODELS
 
-#S_z conservation - fixed spin up subspaces
+# Ising model with tilted magnetic field
+function Tilted_model(sites,BC,J,B,tita)
+    H = .25*J*spin_interactions(sites,1,BC,0,0,1)
+    H+= .5*B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
+    Hh = Hermitian(H)
+    e = eigvals(H)
+    ev = eigvecs(H)
+    return e, ev
+end #function
+
+# Heisenberg chain with random magnetic field interactions
+function Heisenberg_unif_random(sites,BC,h)
+    H = .25*spin_interactions(sites,1,BC,1,1,1)
+    hh = rand(sites) * 2h - h
+    for i=0:sites-1
+        H += .5* hh[i+1] * S_zi(i,sites)
+    end #for
+    #H += .5*B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
+    Hh = Hermitian(H)
+    e = eigvals(H)
+    ev = eigvecs(H)
+    return e, ev
+end #function
+
+# Perturbed XXZ model
+function Perturbed_XXZ(sites,BC,lambdi,a)
+    H = .25*spin_interactions(sites,1,BC,1,1,a)
+    H += .25*lambdi*spin_interactions(sites,2,BC,1,1,a)
+    Hh = Hermitian(H)
+    e = eigvals(H)
+    ev = eigvecs(H)
+    return e, ev
+end #function
+
+
+##(2.3) SYMMETRIES
+
+###(2.3.1) S_z CONSERVATION - fixed spin up subspace
 
 function sz_subspace(sites,n_partic)
     label_state = 0
@@ -239,41 +278,72 @@ function sz_subspace(sites,n_partic)
     return states, flag
 end #function
 
-
-function sz_subspace_spin_interactions(sites,n_partic,neig,BC)
-    states, flag = sz_subspace(sites,n_partic)
+# Pauli at site operator (x,i)
+function sz_subspace_S_xi(pos_i,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
-    Sx = zeros(ComplexF64,dim,dim)
-    Sy = zeros(ComplexF64,dim,dim)
-    Sz = zeros(ComplexF64,dim,dim)
-    Cx = 1
-    Cy = 1
-    Cz = 1
-    t1 = 0
-    kk = 0
-    for i=1:dim
-        for n=0:sites-2
-            if ((n<=sites-1-neig) | (BC=="perodic"))
-                stepi = ibits(states[i],n,1) + ibits(states[i], (n+neig)%(sites),1)
-                if (stepi == 1)
-                    kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
-                    t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
-                    t1 = flag[t1+1]
-                    Sy[i,t1]+=-Cy * (-1)^(kk)
-                    Sx[i,t1]+= Cx                    
-                end #if1
-                Sz[i,i]+= Cz * (-1)^(ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1))
-            end #if2
-        end #for2
-    end #for
-    return Sx + Sy + Sz
-end #function
-
-function cabeza_subspace(sites,n_partic)
+    S = zeros(ComplexF64,dim,dim)
     states, flag = sz_subspace(sites,n_partic)
-    return S_zzij()
+    estados2 = zeros(Int64,dim)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == true
+            estados2[i+1] = set_bit(states[i+1],pos_i,0)
+        else
+            estados2[i+1] = set_bit(states[i+1],pos_i,true)
+        end #if  
+    end
+    for i=1:dim
+        for j=1:dim
+            if states[i] == estados2[j]
+                S[i,j]+=1
+            end #if
+        end#for2
+    end #for
+    return S
 end
 
+# Pauli at site operator (y,i)
+function sz_subspace_S_yi(pos_i,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = zeros(Int64,dim)
+    a = zeros(ComplexF64,dim)
+    for i=1:dim
+        if btest(states[i],pos_i) == true
+            estados2[i] = set_bit(states[i],pos_i,0)
+            a[i] = 1im
+        else
+            estados2[i] = set_bit(states[i],pos_i,true)
+            a[i] = -1im
+        end #if  
+    end
+    for i=1:dim
+        for j=1:dim
+            if states[i] == estados2[j]
+                S[i,j]+=a[i]
+            end #if
+        end#for2
+    end #for
+    return S
+end
+
+# Pauli at site operator (z,i)
+function sz_subspace_S_zi(pos_i,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == false
+            S[i+1,i+1] = 1
+        else
+            S[i+1,i+1] = 1
+        end #if  
+    end
+    return S
+end
+
+
+# Neighbor (x,i) (x,j) interaction
 function sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
@@ -302,6 +372,8 @@ function sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic)
     end
     return S
 end
+
+# Neighbor (y,i) (y,j) interaction
 
 function sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
@@ -337,6 +409,8 @@ function sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic)
     return S
 end
 
+# Neighbor (z,i) (z,j) interaction
+
 function sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
@@ -359,16 +433,58 @@ function sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic)
     return S
 end
 
-#
+# Neighbor Cx (x,i)(x,j) + Cy(y,i)(y,j) + Cx(z,i)(z,j) interaction
 
-function Tilted_model(sites,J,B,tita)
-    H = .25*J*spin_interactions(sites,1,"OPEN",0,0,1)
-    H+= .5*B*(sin(tita)*S_x(sites) + cos(tita)*S_z(sites))
+function sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cx,Cy,Cz)
+    states, flag = sz_subspace(sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    Sx = zeros(ComplexF64,dim,dim)
+    Sy = zeros(ComplexF64,dim,dim)
+    Sz = zeros(ComplexF64,dim,dim)
+    t1 = 0
+    kk = 0
+    for i=1:dim
+        for n=0:sites-2
+            if ((n<=sites-1-neig) | (BC=="perodic"))
+                stepi = ibits(states[i],n,1) + ibits(states[i], (n+neig)%(sites),1)
+                if (stepi == 1)
+                    kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
+                    t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
+                    t1 = flag[t1+1]
+                    Sy[i,t1]+=-Cy * (-1)^(kk)
+                    Sx[i,t1]+= Cx                    
+                end #if1
+                Sz[i,i]+= Cz * (-1)^(ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1))
+            end #if2
+        end #for2
+    end #for
+    return Sx + Sy + Sz
+end #function
+
+# Heisenberg chain with random uniform magnetic field in the Sz_subspace
+function sz_subspace_Heisenberg_unif_random(sites,n_partic,h)
+    H = .25*sz_subspace_spin_interactions(sites,n_partic,1,"OPEN",1,1,1)
+    hh = rand(sites) * 2h - h
+    for i=0:sites-1
+        H += .5* hh[i+1] * sz_subspace_S_zi(i,sites)
+    end #for
     Hh = Hermitian(H)
     e = eigvals(H)
     ev = eigvecs(H)
     return e, ev
 end #function
+
+#Perturbed XXZ in the S_z subspace
+function sz_subspace_Perturbed_XXZ(sites,n_partic,BC,lambdi,a)
+    H = .25*sz_subspace_spin_interactions(sites,n_partic,1,BC,1,1,a)
+    H += .25*lambdi*sz_subspace_spin_interactions(sites,n_partic,2,BC,1,1,a)
+    Hh = Hermitian(H)
+    e = eigvals(H)
+    ev = eigvecs(H)
+    return e, ev
+end #function
+
+#----------------  (4) OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
 
 function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
     dim = length(ener)
