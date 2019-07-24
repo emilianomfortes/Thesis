@@ -78,6 +78,57 @@ end
 
 # Pauli at site operators
 
+function spin_interactions(sites,neig,BC,Cx,Cy,Cz)
+    dim = 2^sites
+    Sx = zeros(ComplexF64,dim,dim)
+    Sy = zeros(ComplexF64,dim,dim)
+    Sz = zeros(ComplexF64,dim,dim)
+    t1 = 0
+    kk = 0
+    for i=0:dim-1
+        for n=0:sites-2
+            if ((n<=sites-1-neig) | (BC=="perodic"))
+                kk = ibits(i,n,1) + ibits(i,(n+neig)%(sites),1)
+                t1 = ((i)⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
+                println("t1 = $t1")
+                Sy[i+1,t1+1]+=-Cy * (-1)^(kk)
+                Sx[i+1,t1+1]+= Cx                    
+                Sz[i+1,i+1]+= Cz * (-1)^(kk)
+            end #if
+        end #for2
+    end #for
+    return Sx + Sy + Sz
+end #function-
+
+function S_xi_opt(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        t1 = (i)⊻(set_bit(0,pos_i,true))
+        S[i+1,t1+1]+=1
+    end
+    return S
+end #function
+
+function S_yi_opt(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        t1 = (i)⊻(set_bit(0,pos_i,true))
+        S[i+1,t1+1]+= -1im*((-1)^(ibits(i,pos_i,1)))
+    end
+    return S
+end #function
+
+function S_zi_opt(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        S[i+1,i+1]+= 1*((-1)^(ibits(i,pos_i,1)))
+    end
+    return S
+end #function
+
 function S_xi(pos_i,sites)
     dim = 2^sites
     S = zeros(ComplexF64,dim,dim)
