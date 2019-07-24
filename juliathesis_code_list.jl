@@ -279,6 +279,28 @@ function sz_subspace(sites,n_partic)
 end #function
 
 # Pauli at site operator (x,i)
+function sz_subspace_S_xi_opt(pos_i,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    estados2 = zeros(Int64,dim)
+    for i=0:dim-1
+        if btest(states[i+1],pos_i) == true
+            estados2[i+1] = set_bit(states[i+1],pos_i,0)
+        else
+            estados2[i+1] = set_bit(states[i+1],pos_i,true)
+        end #if  
+    end
+    for i=1:dim
+        for j=1:dim
+            if states[i] == estados2[j]
+                S[i,j]+=1
+            end #if
+        end#for2
+    end #for
+    return S
+end
+
 function sz_subspace_S_xi(pos_i,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
