@@ -77,54 +77,13 @@ end
 ##(2.1) SPIN SITE OPERATIONS
 
 # Pauli at site operators
-
-function spin_interactions(sites,neig,BC,Cx,Cy,Cz)
-    dim = 2^sites
-    Sx = zeros(ComplexF64,dim,dim)
-    Sy = zeros(ComplexF64,dim,dim)
-    Sz = zeros(ComplexF64,dim,dim)
-    t1 = 0
-    kk = 0
-    for i=0:dim-1
-        for n=0:sites-2
-            if ((n<=sites-1-neig) | (BC=="perodic"))
-                kk = ibits(i,n,1) + ibits(i,(n+neig)%(sites),1)
-                t1 = ((i)⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
-                println("t1 = $t1")
-                Sy[i+1,t1+1]+=-Cy * (-1)^(kk)
-                Sx[i+1,t1+1]+= Cx                    
-                Sz[i+1,i+1]+= Cz * (-1)^(kk)
-            end #if
-        end #for2
-    end #for
-    return Sx + Sy + Sz
-end #function-
-
+# Pauli at site operator (x,i) - The opt version is faster than the non opt version if sites>10
 function S_xi_opt(pos_i,sites)
     dim = 2^sites
     S = zeros(ComplexF64,dim,dim)
     for i=0:dim-1
         t1 = (i)⊻(set_bit(0,pos_i,true))
         S[i+1,t1+1]+=1
-    end
-    return S
-end #function
-
-function S_yi_opt(pos_i,sites)
-    dim = 2^sites
-    S = zeros(ComplexF64,dim,dim)
-    for i=0:dim-1
-        t1 = (i)⊻(set_bit(0,pos_i,true))
-        S[i+1,t1+1]+= -1im*((-1)^(ibits(i,pos_i,1)))
-    end
-    return S
-end #function
-
-function S_zi_opt(pos_i,sites)
-    dim = 2^sites
-    S = zeros(ComplexF64,dim,dim)
-    for i=0:dim-1
-        S[i+1,i+1]+= 1*((-1)^(ibits(i,pos_i,1)))
     end
     return S
 end #function
@@ -150,6 +109,17 @@ function S_xi(pos_i,sites)
     return S
 end
 
+# Pauli at site operators (y,i) - The opt version is faster than the non opt version if sites>10
+function S_yi_opt(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        t1 = (i)⊻(set_bit(0,pos_i,true))
+        S[i+1,t1+1]+= -1im*((-1)^(ibits(i,pos_i,1)))
+    end
+    return S
+end #function
+
 function S_yi(pos_i,sites)
     dim = 2^sites
     S = zeros(ComplexF64,dim,dim)
@@ -173,6 +143,16 @@ function S_yi(pos_i,sites)
     end
     return S
 end
+
+# Pauli at site operators (z,i) - The opt version is faster than the non opt version if sites>10
+function S_zi_opt(pos_i,sites)
+    dim = 2^sites
+    S = zeros(ComplexF64,dim,dim)
+    for i=0:dim-1
+        S[i+1,i+1]+= (-1)^(ibits(i,pos_i,1))
+    end
+    return S
+end #function
 
 function S_zi(pos_i,sites)
     dim = 2^sites
@@ -228,9 +208,9 @@ function S_z(sites)
     for l=1:dim
         for j=0:sites-1
             if btest(l-1,j) == true
-                H[l,l]=H[l,l] - 1
+                H[l,l]+=- 1
             else
-                H[l,l]=H[l,l] +1
+                H[l,l]+= +1
             end             
         end
     end
@@ -238,7 +218,6 @@ function S_z(sites)
 end
 
 # Neighbour interactionss xx,yy,zz all in one for speed
-
 function spin_interactions(sites,neig,BC,Cx,Cy,Cz)
     dim = 2^sites
     Sx = zeros(ComplexF64,dim,dim)
@@ -302,6 +281,7 @@ end #function
 
 ###(2.3.1) S_z CONSERVATION - fixed spin up subspace
 
+#S_z conservation system states
 function sz_subspace(sites,n_partic)
     label_state = 0
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
@@ -334,21 +314,10 @@ function sz_subspace_S_xi_opt(pos_i,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
     states, flag = sz_subspace(sites,n_partic)
-    estados2 = zeros(Int64,dim)
-    for i=0:dim-1
-        if btest(states[i+1],pos_i) == true
-            estados2[i+1] = set_bit(states[i+1],pos_i,0)
-        else
-            estados2[i+1] = set_bit(states[i+1],pos_i,true)
-        end #if  
-    end
     for i=1:dim
-        for j=1:dim
-            if states[i] == estados2[j]
-                S[i,j]+=1
-            end #if
-        end#for2
-    end #for
+            t1 = (states[i])⊻(set_bit(0,pos_i,true))
+            S[i,i]+=1
+    end #for  
     return S
 end
 
@@ -375,6 +344,17 @@ function sz_subspace_S_xi(pos_i,sites,n_partic)
 end
 
 # Pauli at site operator (y,i)
+function sz_subspace_S_yi_opt(pos_i,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    for i=1:dim
+            t1 = (states[i])⊻(set_bit(0,pos_i,true))
+            S[i,t1+1]+= -1im*((-1)^(ibits(states[i],pos_i,1)))
+    end #for  
+    return S
+end
+
 function sz_subspace_S_yi(pos_i,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
@@ -401,6 +381,16 @@ function sz_subspace_S_yi(pos_i,sites,n_partic)
 end
 
 # Pauli at site operator (z,i)
+function sz_subspace_S_zi_opt(pos_i,sites,n_partic)
+    dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+    S = zeros(ComplexF64,dim,dim)
+    states, flag = sz_subspace(sites,n_partic)
+    for i=1:dim
+            S[i,i]+= (-1)^(ibits(states[i],pos_i,1))
+    end #for  
+    return S
+end
+
 function sz_subspace_S_zi(pos_i,sites,n_partic)
     dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
     S = zeros(ComplexF64,dim,dim)
@@ -409,7 +399,7 @@ function sz_subspace_S_zi(pos_i,sites,n_partic)
         if btest(states[i+1],pos_i) == false
             S[i+1,i+1] = 1
         else
-            S[i+1,i+1] = 1
+            S[i+1,i+1] = -1
         end #if  
     end
     return S
