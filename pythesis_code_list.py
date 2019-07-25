@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
 ##(2.1) - SPIN SITE OPERATIONS
-##(2.2) - SYMMETRIES
+##(2.2) - CHAIN MODELS
+##(2.3) - SYMMETRIES
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
@@ -54,6 +55,14 @@ def ibits(num,pos,lens):
 ##(2.1) SPIN SITE OPERATIONS
 
 # Pauli at site operators
+# Pauli at site operator (x,i) - The opt version is faster than the non opt version if sites>10
+def S_xi_opt(pos_i,sites)
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        t1 = (i)^(set_bit(0,pos_i,1))
+        S[i,t1]+=1
+    return S
 
 def S_xi(pos_i,sites):
     dim = 2**sites
@@ -68,6 +77,15 @@ def S_xi(pos_i,sites):
         for j in range(dim):
             if i == estados2[j]:
                 S[i,j] = S[i,j]+1
+    return S
+
+# Pauli at site operator (y,i) - The opt version is faster than the non opt version if sites>10
+def S_yi_opt(pos_i,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        t1 = (i)^(set_bit(0,pos_i,1))
+        S[i,t1]+= -1j*((-1)**(ibits(i,pos_i,1)))
     return S
 
 def S_yi(pos_i,sites):
@@ -87,7 +105,16 @@ def S_yi(pos_i,sites):
             if i == estados2[j]:
                 S[i,j] = S[i,j]+a[i]
     return S
-    
+
+# Pauli at site operator (z,i) - The opt version is faster than the non opt version if sites>10
+def S_zi_opt(pos_i,sites):
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        t1 = (i)^(set_bit(0,pos_i,1))
+        S[i,i]+= (-1)**(ibits(i,pos_i,1))
+    return S
+
 def S_zi(pos_i,sites):
     dim = 2**sites
     S = np.zeros((dim,dim),dtype=complex)
