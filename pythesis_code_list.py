@@ -56,7 +56,7 @@ def ibits(num,pos,lens):
 
 # Pauli at site operators
 # Pauli at site operator (x,i) - The opt version is faster than the non opt version if sites>10
-def S_xi_opt(pos_i,sites)
+def S_xi_opt(pos_i,sites):
     dim = 2**sites
     S = np.zeros((dim,dim),dtype=complex)
     for i in range(dim):
@@ -126,6 +126,16 @@ def S_zi(pos_i,sites):
     return S
 
 # Neighbor i-j site interactions
+# Neighbor interaction (x,i)(x,j) - The opt version is faster if
+def S_xxij_opt(pos_i,pos_j,sites):  
+    dim = 2**sites
+    Sx = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            t1 = (i)^(set_bit(0,pos_i,1))
+            t1 = t1^(set_bit(0,(pos_i+np.abs(pos_j-pos_i) % sites), 1))
+            Sx[i,t1]+= 1
+    return Sx
 
 def S_xxij(pos_i,pos_j,sites):
     dim = 2**sites
@@ -145,6 +155,17 @@ def S_xxij(pos_i,pos_j,sites):
         for j in range(dim):
             if i == estados2[j]:
                 S[i,j] = S[i,j]+1
+    return S
+
+# Neighbor interaction (y,i)(y,j) - The opt version is faster if
+def S_yyij_opt(pos_i,pos_j,sites):  
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            t1 = (i)^(set_bit(0,pos_i,1))
+            t1 = t1^(set_bit(0,(pos_i+np.abs(pos_j-pos_i) % sites), 1))
+            S[i,t1]+= -1*((-1)**(ibits(i,pos_i,1) + ibits(i,pos_i+np.abs(pos_j-pos_i) % sites,1)))
     return S
 
 def S_yyij(pos_i,pos_j,sites):
@@ -171,6 +192,15 @@ def S_yyij(pos_i,pos_j,sites):
         for j in range(dim):
             if i == estados2[j]:
                 S[i,j] = S[i,j]+a[i]
+    return S
+
+# Neighbor interactino (z,i)(z,j) - The opt version is faster if
+def S_zzij_opt(pos_i,pos_j,sites):  
+    dim = 2**sites
+    S = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            S[i,i]+= (-1)**(ibits(i,pos_i,1) + ibits(i,pos_i+np.abs(pos_j-pos_i) % sites,1))
     return S
 
 def S_zzij(pos_i,pos_j,sites):
@@ -259,7 +289,7 @@ def spin_interactions(sites,neig,BC,Cxx,Cyy,Czz):
                 kk = ibits(i,n,1) + ibits(i,n+neig % sites,1)
                 t1 = (i)^(set_bit(0,n,1))
                 t1 = t1^(set_bit(0, n+neig % sites, 1))
-		print(t1)
+		#print(t1)
                 Sy[i,t1]+= -Cy[i] * (-1)**(kk)
                 Sx[i,t1]+= Cx[i]
                 Sz[i,i]+= Cz[i] * (-1)**(kk)
