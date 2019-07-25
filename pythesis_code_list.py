@@ -319,6 +319,22 @@ def sz_subspace(sites,n_partic):
             flag[i] = label_state
     return states, flag
 
+#S_z subspace neighbor i,j interactions
+#Neighbor (x,i)(x,j) interaction - The opt version is faster if
+def sz_subspace_S_xxij_opt(pos_i,pos_j,sites,n_partic):  
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            stepi = ibits(states[i],pos_i,1) + ibits(states[i], (pos_i+np.abs(pos_j-pos_i))%(sites),1)
+	    if stepi == 1:
+                t1 = (states[i])^(set_bit(0,pos_i,1))
+                print(t1)
+                t1 = int(flag[(t1)^(set_bit(0, pos_i+np.abs(pos_j-pos_i) % sites, 1))] )
+                S[i,t1-1]+= 1
+    return S
+
 def sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic):
     dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
     S = np.zeros((dim,dim),dtype=complex)
@@ -338,6 +354,21 @@ def sz_subspace_S_xxij(pos_i,pos_j,sites,n_partic):
         for j in range(dim):
             if states[i] == estados2[j]:
                 S[i,j] = S[i,j]+1
+    return S
+
+# Neighbor (y,i)(y,j) interaction - The opt version is faster if
+def sz_subspace_S_yyij_opt(pos_i,pos_j,sites,n_partic):  
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            stepi = ibits(states[i],pos_i,1) + ibits(states[i], (pos_i+np.abs(pos_j-pos_i))%(sites),1)
+	    if stepi == 1:
+                t1 = (states[i])^(set_bit(0,pos_i,1))
+                print(t1)
+                t1 = int(flag[(t1)^(set_bit(0, pos_i+np.abs(pos_j-pos_i) % sites, 1))] )
+                S[i,t1-1]+= -((-1)**(ibits(states[i],pos_i,1) + ibits(states[i],pos_i+np.abs(pos_j-pos_i) % sites,1)))
     return S
 
 def sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic):
@@ -364,6 +395,16 @@ def sz_subspace_S_yyij(pos_i,pos_j,sites,n_partic):
         for j in range(dim):
             if states[i] == estados2[j]:
                 S[i,j] = S[i,j] + a[i]
+    return S
+
+#Neighbor (z,i)(z,j) interaction - The opt version is faster if
+def sz_subspace_S_zzij_opt(pos_i,pos_j,sites,n_partic):  
+    dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
+    S = np.zeros((dim,dim),dtype=complex)
+    states, flag = sz_subspace(sites,n_partic)
+    for i in range(dim):
+	if (pos_i<=sites-1-np.abs(pos_j-pos_i)):
+            S[i,i]+= (-1)**(ibits(states[i],pos_i,1) + ibits(states[i],pos_i+np.abs(pos_j-pos_i) % sites,1))
     return S
 
 def sz_subspace_S_zzij(pos_i,pos_j,sites,n_partic):
@@ -403,16 +444,16 @@ def sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cxx,Cyy,Czz):
 	Cz = np.zeros(dim,dtype=float)+Czz
     else:
 	Cz = Czz
-    print(flag)
+    #print(flag)
     for i in range(1,dim+1):
         for n in range(sites-1):
             if ((n<=sites-1-neig) | (BC=="perodic")):
                 stepi = ibits(states[i-1],n,1) + ibits(states[i-1], (n+neig)%(sites),1)
-                print("stepi = ",stepi)
+                #print("stepi = ",stepi)
                 if (stepi == 1):
                     kk = ibits(states[i-1],n,1) + ibits(states[i-1],n+neig % sites,1)
                     t1 = (states[i-1])^(set_bit(0,n,1))
-                    print(t1)
+                    #print(t1)
                     t1 = int(flag[(t1)^(set_bit(0, n+neig % sites, 1))] )
                     #print(t1)
                     Sy[i-1,t1-1]+= -Cy[i-1] * (-1)**(kk)
