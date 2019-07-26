@@ -800,7 +800,7 @@ def r_chaometer(ener,plotadjusted):
 
 # Returns OTOC's Spectarl IPR and Standard deviation.
 def OTOC_chaotic_measures(tiempo,otoks,lentest0,lentest,dt):
-    lentest = int(lentest)
+    lentest = int(lentest/dt)
     lentest0 = int(lentest0/dt)
     distri = 1
     otok_osc = otoks[lentest0:lentest] - np.mean(otoks[lentest0:lentest])
@@ -812,6 +812,7 @@ def OTOC_chaotic_measures(tiempo,otoks,lentest0,lentest,dt):
     distri= scipy.integrate.simps(np.abs(fft_osc)**2,freq)
     sipr_simpson= scipy.integrate.simps(np.abs(fft_osc)**4/(distri**2),freq)
     distri = 0
+    sipr_df = 0
     for i in range(len(freq)):
         distri = distri + dx * (abs(fft_osc[i])**2)
     for i in range(len(freq)):
