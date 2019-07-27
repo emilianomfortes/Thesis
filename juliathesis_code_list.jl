@@ -586,3 +586,7 @@ function OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho)
     return otoc,tiempo
 end #function
 
+function Brody_distribution(s,B)
+    bebi = Distributions.Gramma((B+2)/(B+1))^(B+1)
+    return (B+1)*bebi*(s^B)*exp(-bebi*(s^(B+1)))
+end#function 
