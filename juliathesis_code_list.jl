@@ -1,3 +1,7 @@
+using LinearAlgebra
+using StatsBase
+using Distribution
+using LsqFit
 #INDEX - Use ctrl+F to browse faster
 #(1) - BINARY OPERATIONS
 #(2) - SPIN OPERATIONS
