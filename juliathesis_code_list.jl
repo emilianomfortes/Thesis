@@ -74,18 +74,18 @@ module jtss
         Base.parse(Int,join(Base.reverse(numeronuevo)),base=2)
     end
 
-	#mvbits fortran function
-	function mvbits(from,frompos,len,to,topos)
-		binary = Base.digits(from,base=2)
-		binary2 = Base.digits(to,base=2)
-		lentot = frompos+topos+len + max(length(binary),length(binary2))
-		zz1 = zeros(Int,lentot)
-		zz2 = zeros(Int,lentot)
-		zz1[1:length(binary)] = binary[:]
-		zz2[1:length(binary2)] = binary2[:]
-		zz2[1+topos:topos+len] = zz1[frompos+1:frompos+len]
-		return Base.parse(Int,join(Base.reverse(zz2)),base=2)
-	end#function mvbits
+#mvbits fortran function
+    function mvbits(from,frompos,len,to,topos)
+	binary = Base.digits(from,base=2)
+	binary2 = Base.digits(to,base=2)
+	lentot = frompos+topos+len + max(length(binary),length(binary2))
+	zz1 = zeros(Int,lentot)
+	zz2 = zeros(Int,lentot)
+	zz1[1:length(binary)] = binary[:]
+	zz2[1:length(binary2)] = binary2[:]
+	zz2[1+topos:topos+len] = zz1[frompos+1:frompos+len]
+	return Base.parse(Int,join(Base.reverse(zz2)),base=2)
+    end#function mvbits
 
     #----------------  (2) SPIN OPERATIONS  ----------------#
 
