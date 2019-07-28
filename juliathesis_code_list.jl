@@ -6,7 +6,7 @@ module jtss
     ##(2.1) - SPIN SITE OPERATIONS
     ##(2.2) - CHAIN MODELS
     ##(2.3) - SYMMETRIES
-	###(2.3.1) - PARITY
+    ###(2.3.1) - PARITY
     ###(2.3.2) - S_z CONSERVATION
     #(3) - OUT-OF-TIME-ORDERED CORRELATORS
     ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
@@ -306,8 +306,8 @@ module jtss
 			q = i   
 			p = i 
 			for j=0:rangoz
-				q = jtss.mvbits(p,j,1,q,sites-1-j)
-				q = jtss.mvbits(p,sites-1-j,1,q,j)
+				q = mvbits(p,j,1,q,sites-1-j)
+				q = mvbits(p,sites-1-j,1,q,j)
 			end#for2
 			basis2[i+1,:] = basis[q+1,:]
 		end#for
@@ -571,9 +571,52 @@ module jtss
                     if (stepi == 1)
                         kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
                         t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
-                        t1 = flag[t1+1]
+      
+					t1 = flag[t1+1]
                         Sy[i,t1]+=-Cy * (-1)^(kk)
-                        Sx[i,t1]+= Cx                    
+                    Sx[i,t1]+= Cx           function sz_parity_subspace(sites,n_partic,basis,ener,pariti)
+        dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+        states, flags = jtss.sz_subspace(sites,n_partic)
+        basis2 = zeros(ComplexF64,dim,dim)
+        if sites % 2 == 0
+            rangoz = Int(-1+sites/2)
+        else
+            rangoz = Int(-1+(sites-1)/2)
+        end#if
+        for i=0:dim-1
+            q = states[i+1]   
+            p = states[i+1]
+            for j=0:rangoz
+                q = jtss.mvbits(p,j,1,q,sites-1-j)
+                q = jtss.mvbits(p,sites-1-j,1,q,j)
+            end#for2
+            basis2[i+1,:] = basis[q+1,:]
+        end#for
+        dimparity=0
+        enerparity=zeros(0)
+        basisparity=zeros(dim,dim)
+        if pariti == "EVEN"
+            for i=1:dim
+                println(real(transpose(basis[:,i])*basis2[:,i]))
+                if real(transpose(basis[:,i])*basis2[:,i]) > 0
+                    dimparity+=1
+                    append!(enerparity,ener[i])
+                    basisparity[:,dimparity]=basis[:,i]
+                end#if
+            end#for        
+        else
+            for i=1:dim
+                println(real(transpose(basis[:,i])*basis2[:,i]))
+                if real(transpose(basis[:,i])*basis2[:,i]) < 0
+                    dimparity+=1
+                    append!(enerparity,ener[i])
+                    basisparity[:,dimparity]=basis[:,i]
+                end#if
+            end#for 
+        end#if
+        return enerparity,basisparity[:,1:dimparity]
+    end#function
+					
                     end #if1
                     Sz[i,i]+= Cz * (-1)^(ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1))
                 end #if2
@@ -604,6 +647,50 @@ module jtss
         ev = eigvecs(H)
         return e, ev
     end #function
+
+    ###(2.3.3) S_z conservation + PARITY
+    function sz_parity_subspace(sites,n_partic,basis,ener,pariti)
+        dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
+        states, flags = sz_subspace(sites,n_partic)
+        basis2 = zeros(ComplexF64,dim,dim)
+        if sites % 2 == 0
+            rangoz = Int(-1+sites/2)
+        else
+            rangoz = Int(-1+(sites-1)/2)
+        end#if
+        for i=0:dim-1
+            q = states[i+1]   
+            p = states[i+1]
+            for j=0:rangoz
+                q = jtss.mvbits(p,j,1,q,sites-1-j)
+                q = jtss.mvbits(p,sites-1-j,1,q,j)
+            end#for2
+            basis2[i+1,:] = basis[q+1,:]
+        end#for
+        dimparity=0
+        enerparity=zeros(0)
+        basisparity=zeros(dim,dim)
+        if pariti == "EVEN"
+            for i=1:dim
+                println(real(transpose(basis[:,i])*basis2[:,i]))
+                if real(transpose(basis[:,i])*basis2[:,i]) > 0
+                    dimparity+=1
+                    append!(enerparity,ener[i])
+                    basisparity[:,dimparity]=basis[:,i]
+                end#if
+            end#for        
+        else
+            for i=1:dim
+                println(real(transpose(basis[:,i])*basis2[:,i]))
+                if real(transpose(basis[:,i])*basis2[:,i]) < 0
+                    dimparity+=1
+                    append!(enerparity,ener[i])
+                    basisparity[:,dimparity]=basis[:,i]
+                end#if
+            end#for 
+        end#if
+        return enerparity,basisparity[:,1:dimparity]
+    end#function
 
     #----------------  (4) OUT-OF-TIME-ORDERED CORRELATORS  ----------------#
 
