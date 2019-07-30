@@ -1,5 +1,5 @@
 module jtss
-	using LinearAlgebra
+    using LinearAlgebra
     #INDEX - Use ctrl+F to browse faster
     #(1) - BINARY OPERATIONS
     #(2) - SPIN OPERATIONS
@@ -74,18 +74,18 @@ module jtss
         Base.parse(Int,join(Base.reverse(numeronuevo)),base=2)
     end
 
-#mvbits fortran function
+    #mvbits fortran function
     function mvbits(from,frompos,len,to,topos)
-	binary = Base.digits(from,base=2)
-	binary2 = Base.digits(to,base=2)
-	lentot = frompos+topos+len + max(length(binary),length(binary2))
-	zz1 = zeros(Int,lentot)
-	zz2 = zeros(Int,lentot)
-	zz1[1:length(binary)] = binary[:]
-	zz2[1:length(binary2)] = binary2[:]
-	zz2[1+topos:topos+len] = zz1[frompos+1:frompos+len]
-	return Base.parse(Int,join(Base.reverse(zz2)),base=2)
-    end#function mvbits
+		binary = Base.digits(from,base=2)
+		binary2 = Base.digits(to,base=2)
+		lentot = frompos+topos+len + max(length(binary),length(binary2))
+		zz1 = zeros(Int,lentot)
+		zz2 = zeros(Int,lentot)
+		zz1[1:length(binary)] = binary[:]
+		zz2[1:length(binary2)] = binary2[:]
+		zz2[1+topos:topos+len] = zz1[frompos+1:frompos+len]
+		return Base.parse(Int,join(Base.reverse(zz2)),base=2)
+    end #function mvbits
 
     #----------------  (2) SPIN OPERATIONS  ----------------#
 
@@ -292,9 +292,9 @@ module jtss
 
     ##(2.3) SYMMETRIES
 
-	###(2.3.1) PARITY
+    ###(2.3.1) PARITY
 	
-	function parity_subspace(sites,basis,ener,pariti)
+    function parity_subspace(sites,basis,ener,pariti)
 		dim = 2^sites
 		basis2 = zeros(ComplexF64,dim,dim)
 		if sites % 2 == 0
@@ -325,7 +325,7 @@ module jtss
 			end#for        
 		else
 			for i=1:dim
-				if real(transpose(basis[:,i])*basis2[:,i]) < 0
+				if real(transpose(basis[:,i])*basis2[:,i]) < 0					
 					println(real(transpose(basis[:,i])*basis2[:,i]))
 					dimparity+=1
 					append!(enerparity,ener[i])
@@ -334,7 +334,7 @@ module jtss
 			end#for 
 		end#if
 		return enerparity,basisparity[:,1:dimparity]
-	end#function       
+    end#function       
 
 
     ###(2.3.2) S_z CONSERVATION - fixed spin up subspace
@@ -556,7 +556,7 @@ module jtss
 
     # Neighbor Cx (x,i)(x,j) + Cy(y,i)(y,j) + Cx(z,i)(z,j) interaction
 
-    function sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cx,Cy,Cz)
+	function sz_subspace_spin_interactions(sites,n_partic,neig,BC,Cx,Cy,Cz)
         states, flag = sz_subspace(sites,n_partic)
         dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
         Sx = zeros(ComplexF64,dim,dim)
@@ -571,52 +571,9 @@ module jtss
                     if (stepi == 1)
                         kk = ibits(states[i],n,1) + ibits(states[i],(n+neig)%(sites),1)
                         t1 = ((states[i])⊻(set_bit(0,n,true)))⊻(set_bit(0,(n+neig)%(sites), true))
-      
-					t1 = flag[t1+1]
+      					t1 = flag[t1+1]
                         Sy[i,t1]+=-Cy * (-1)^(kk)
-                    Sx[i,t1]+= Cx           function sz_parity_subspace(sites,n_partic,basis,ener,pariti)
-        dim = convert(Int64,factorial(sites)/(factorial(sites-n_partic)*factorial(n_partic)))
-        states, flags = jtss.sz_subspace(sites,n_partic)
-        basis2 = zeros(ComplexF64,dim,dim)
-        if sites % 2 == 0
-            rangoz = Int(-1+sites/2)
-        else
-            rangoz = Int(-1+(sites-1)/2)
-        end#if
-        for i=0:dim-1
-            q = states[i+1]   
-            p = states[i+1]
-            for j=0:rangoz
-                q = jtss.mvbits(p,j,1,q,sites-1-j)
-                q = jtss.mvbits(p,sites-1-j,1,q,j)
-            end#for2
-            basis2[i+1,:] = basis[q+1,:]
-        end#for
-        dimparity=0
-        enerparity=zeros(0)
-        basisparity=zeros(dim,dim)
-        if pariti == "EVEN"
-            for i=1:dim
-                println(real(transpose(basis[:,i])*basis2[:,i]))
-                if real(transpose(basis[:,i])*basis2[:,i]) > 0
-                    dimparity+=1
-                    append!(enerparity,ener[i])
-                    basisparity[:,dimparity]=basis[:,i]
-                end#if
-            end#for        
-        else
-            for i=1:dim
-                println(real(transpose(basis[:,i])*basis2[:,i]))
-                if real(transpose(basis[:,i])*basis2[:,i]) < 0
-                    dimparity+=1
-                    append!(enerparity,ener[i])
-                    basisparity[:,dimparity]=basis[:,i]
-                end#if
-            end#for 
-        end#if
-        return enerparity,basisparity[:,1:dimparity]
-    end#function
-					
+						Sx[i,t1]+= Cx           					
                     end #if1
                     Sz[i,i]+= Cz * (-1)^(ibits(states[i],n,1) + ibits(states[i],n+neig % sites,1))
                 end #if2
@@ -727,11 +684,12 @@ module jtss
         return otoc,tiempo
     end #function
 
-	function Brody_distribution(s,B)
+    function Brody_distribution(s,B)
 		bebi = SpecialFunctions.gamma((B+2)/(B+1))^(B+1)
 		dd = (B+1)*bebi*(s^B)*exp(-bebi*(s^(B+1)))
 		return dd
-	end#function 
+    end#function 
 
 
 end#module
+
