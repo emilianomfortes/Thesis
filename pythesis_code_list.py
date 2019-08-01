@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 ##(2.1) - SPIN SITE OPERATIONS
 ##(2.2) - CHAIN MODELS
 ##(2.3) - SYMMETRIES
+###(2.3.1) - PARITY
+###(2.3.2) = S_z CONSERVATION
 #(3) - OUT-OF-TIME-ORDERED CORRELATORS
 ##(3.1) - WITH TEMPERATURE CHOICES (IF T=INFTY USE INFTY TEMPERATURE OTOCS FOR EXTRA SPEED)
 ##(3.2) - INFTY TEMPERATURE OTOCS
@@ -49,6 +51,18 @@ def ibits(num,pos,lens):
      #kBitSubStr = binary[len(binary)-pos-1-lens:len(binary)-pos-1]
      # convert extracted sub-string into decimal again 
      return (int(kBitSubStr,2)) 
+
+def mvbits(frm,frompos,leng,to,topos):
+    binary = bin(frm)[2:][::-1]
+    binary2 = bin(to)[2:][::-1]
+    lentot = frompos+topos+leng+max(len(binary),len(binary2))
+    for m in range(lentot):
+	binary += str(0)
+	binary2 += str(0)
+    zz = list(binary2)
+    zz2 = list(binary)	 
+    zz[topos:topos+leng] = zz2[frompos:frompos+leng]
+    return int(''.join(zz[::-1]),2)
 
 #----------------  (2) SPIN OPERATIONS  ----------------#
 
@@ -295,7 +309,62 @@ def spin_interactions(sites,neig,BC,Cxx,Cyy,Czz):
                 Sz[i,i]+= Cz[i] * (-1)**(kk)
     return Sx + Sy + Sz
 
-### (2.2) SYMMETRIES
+##(2.2) CHAIN MODELS
+
+def Tilted_model(sites,BC,J,B,tita):
+    H = .25*J*spin_interactions(sites,1,BC,0,0,1)
+    H+= .5*B*(np.sin(tita)*S_x(sites) + np.cos(tita)*S_z(sites))
+    e, ev = np.linalg.eigh(H)
+    return e, ev
+
+def Perturbed_XXZ(sites,BC,alpha,lambd):
+    H = .25*spin_interactions(sites,1,BC,1,1,alpha)
+    H+= .25*lambd*spin_interactions(sites,2,BC,1,1,alpha)
+    e, ev = np.linalg.eigh(H)
+    return e, ev
+
+##(2.3) SYMMETRIES
+
+###(2.3.1) PARITY
+
+def parity_subspace(sites,basis,ener,pariti):
+    dim = 2**sites
+    basis2 = np.zeros((dim,dim),dtype=complex)
+    if sites % 2 == 0:
+	rangoz = int(sites/2)
+    else:
+	rangoz = int((sites-1)/2)
+    #print(rangoz)
+    for i in range(dim):
+	q = i
+	p = i
+	for j in range(rangoz):
+	    q = mvbits(p,j,1,q,sites-1-j)
+	    #print(q)
+            q = mvbits(p,sites-1-j,1,q,j)
+	    #print(q)
+	basis2[i,:] = basis[q,:]
+    dimparity = -1
+    enerparity = []
+    basisparity = np.zeros((dim,dim),dtype=complex)
+    if pariti == "EVEN":
+	for i in range(dim):
+	    #print(np.vdot(basis[:,i],basis2[:,i]).real)
+	    if np.vdot(basis[:,i],basis2[:,i]).real > 0:
+		dimparity += 1
+		enerparity.append(ener[i])
+		basisparity[:,dimparity]=basis[:,i]
+    else:
+	for i in range(dim):
+ 	    #print(np.vdot(basis[:,i],basis2[:,i]).real)
+	    if np.vdot(basis[:,i],basis2[:,i]).real < 0:
+		dimparity += 1
+		enerparity.append(ener[i])
+		basisparity[:,dimparity]=basis[:,i]
+    return enerparity,basisparity[:,0:dimparity+1]
+
+
+###(2.3.2) S_z CONSERVATION
 
 #S_z conservation spin up subspaces
 def sz_subspace(sites,n_partic):
@@ -637,14 +706,14 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     mm2 = np.zeros((dim,dim),dtype="complex64",order='F')
     otok1 = np.zeros(N,dtype = "float32")
     otok2 = np.zeros(N,dtype = "float32")
-    tiempo = np.linspace(t0,N*dt,N)
+    tiempo = np.linspace(t0,N*dt+t0,N)
     U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
     for ti in range(0,N):
         #start_time = timeit.default_timer()
         for c1 in range(0,dim):
-            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
-            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+            U[c1,c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1,c1] = np.exp(1j*tiempo[ti]*ener[c1])
         mm = FB.cgemm(1,S0,U)
         mm1= FB.cgemm(1,Udagger,mm) #S0(t)
         mm2 = FB.cgemm(1,mm1,mm1) # S0(t) S0(t)
@@ -652,8 +721,8 @@ def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
         mm2 = FB.cgemm(1,S,mm2) # S S0(t) S0(t) S
         mm = FB.cgemm(1,mm1,S) #S0(t) S
         mm = FB.cgemm(1,mm,mm) #S0(t) S S0(t) S
-        otok1[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real #otok1 = 1 - Re [Tr(S0(t) S S0(t) S)]/D
-        otok2[ti] = np.matrix.trace(mm2).real/len(ener) #otok2 = Tr(S S0(t) S0(t) S)/D
+        otok1[ti] = -(np.matrix.trace(mm)/dim).real #otok1 = - Re [Tr(S0(t) S S0(t) S)]/D
+        otok2[ti] = np.matrix.trace(mm2).real/dim #otok2 = Tr(S S0(t) S0(t) S)/D
         #elapsed = timeit.default_timer() - start_time
         #print(elapsed)   
     otok1 = np.array(otok1)
@@ -812,12 +881,12 @@ def OTOC_chaotic_measures(tiempo,otoks,lentest0,lentest,dt):
     distri= scipy.integrate.simps(np.abs(fft_osc)**2,freq)
     sipr_simpson= scipy.integrate.simps(np.abs(fft_osc)**4/(distri**2),freq)
     distri = 0
-    sipr_df = 0
-    for i in range(len(freq)):
-        distri = distri + dx * (abs(fft_osc[i])**2)
-    for i in range(len(freq)):
-        sipr_df = sipr_df + dx * (abs(fft_osc[i])**4/(distri**2)) 
-    sipr_df = 1/sipr_df
+    #sipr_df = 0
+    #for i in range(len(freq)):
+    #    distri = distri + dx * (abs(fft_osc[i])**2)
+    #for i in range(len(freq)):
+    #    sipr_df = sipr_df + dx * (abs(fft_osc[i])**4/(distri**2)) 
+    #sipr_df = 1/sipr_df
     sipr_simpson = 1/sipr_simpson
     return sipr_simpson, std
 
