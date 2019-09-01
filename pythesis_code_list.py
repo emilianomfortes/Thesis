@@ -830,7 +830,7 @@ def Brody_distribution(s,B):
 # BERRY ROBNIK DISTRIBUTION 
 def BerryRobnik_distribution(s,Q):
     bebi = (Q+0.5*np.pi*(1-Q)*s)    
-return bebi * np.exp(-Q*s - 0.25*np.pi*(1-Q)*s*s)
+    return bebi * np.exp(-Q*s - 0.25*np.pi*(1-Q)*s*s)
 
 
 # Adjusts the Brody parameter to a discrete distribution of energy "yyy" separated in an amount bins "beens" (Recommended beens='auto')
