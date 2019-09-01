@@ -827,6 +827,12 @@ def Brody_distribution(s,B):
     bebi = (math.gamma(((B+2)/(B+1)))) ** (B+1)
     return (B+1)*bebi*(s**B) * np.exp(-bebi*(s**(B+1)))
 
+# BERRY ROBNIK DISTRIBUTION 
+def BerryRobnik_distribution(s,Q):
+    bebi = (Q+0.5*np.pi*(1-Q)*s)    
+return bebi * np.exp(-Q*s - 0.25*np.pi*(1-Q)*s*s)
+
+
 # Adjusts the Brody parameter to a discrete distribution of energy "yyy" separated in an amount bins "beens" (Recommended beens='auto')
 def brody_param(yyy,beens):
     med1=0
@@ -853,6 +859,33 @@ def brody_param(yyy,beens):
         pruebas[lau-1] = lau * deltilla
     brody_paramet, pcov = curve_fit(Brody_distribution, pruebas, datos)
     return brody_paramet
+
+# Adjusts the BerryRobnik parameter to a discrete distribution of energy "yyy" separated in an amount bins "beens" (Recommended beens='auto')
+def BerryRobnik_param(yyy,beens):
+    med1=0
+    for count2 in range(0,len(yyy)):
+        med1=med1+yyy[count2]
+    med1=med1/len(yyy)
+    s1=0
+    for count2 in range(0,len(yyy)):
+        s1=s1+(yyy[count2]-med1)**2
+    
+    s1=np.sqrt(s1/len(yyy))
+    con1=1./(np.sqrt(2.*np.pi)*s1)
+    xs3 = np.linspace(yyy[0], yyy[len(yyy)-1], 100)
+    nt=100
+    de=[]
+    nsaco=30
+    for count2 in range(0+nsaco,len(yyy)-1-nsaco):
+        de.append((yyy[count2+1]-yyy[count2])*(len(yyy)*con1*np.exp(-(yyy[count2]-med1)**2/(2.*s1**2))))
+    datos, binsdata = np.histogram(de,bins=beens,normed=True)
+    prueba = binsdata
+    deltilla = prueba[1]-prueba[0]
+    pruebas = np.zeros(len(prueba)-1)
+    for lau in range(1,len(prueba)):
+        pruebas[lau-1] = lau * deltilla
+    BR_paramet, pcov = curve_fit(BerryRobnik_distribution, pruebas, datos)
+    return BR_paramet
 
 # Calcultes r parameter in the 10% center of the energy "ener" spectrum. If plotadjusted = True, returns the magnitude adjusted to Poisson = 0 or WD = 1
 def r_chaometer(ener,plotadjusted):
