@@ -389,7 +389,7 @@ def sz_subspace(sites,n_partic):
     return states, flag
 
 #Neighbor (z,i)(z,j) interaction - The opt version is faster if
-def sz_subspace_S_zi_opt(pos_i,sites,n_partic):  
+def sz_subspace_S_zi(pos_i,sites,n_partic):  
     dim = int(math.factorial(sites)/(math.factorial(sites-n_partic)*math.factorial(n_partic)))
     S = np.zeros((dim,dim),dtype=complex)
     states, flag = sz_subspace(sites,n_partic)
