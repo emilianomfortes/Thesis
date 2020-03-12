@@ -271,7 +271,7 @@ def S_z(sites): # Entire S_z operator
                 H[l-1,hh-1]=H[l-1,hh-1] + 1
     return H
 
-#%% Neighbour interactionss xx,yy,zz all in one for speed
+# Neighbour interactionss xx,yy,zz all in one for speed
 
 def spin_interactions(sites,neig,BC,Cxx,Cyy,Czz):  
     dim = 2**sites
@@ -303,26 +303,6 @@ def spin_interactions(sites,neig,BC,Cxx,Cyy,Czz):
                 Sx[i,t1]+= Cx[i]
                 Sz[i,i]+= Cz[i] * (-1)**(kk)
     return Sx + Sy + Sz
-
-##(2.2) CHAIN MODELS
-
-def Tilted_model(sites,BC,J,B,tita):
-    H = .25*J*spin_interactions(sites,1,BC,0,0,1)
-    H+= .5*B*(np.sin(tita)*S_x(sites) + np.cos(tita)*S_z(sites))
-    e, ev = np.linalg.eigh(H)
-    return e, ev
-
-def Ising_XZ_fields(sites,BC,J,hx,hy,hz):
-    H = -J*spin_interactions(sites,1,BC,0,0,1)
-    H+= (hx*S_x(sites) + hy*S_y(sites) + hz*S_z(sites))
-    e, ev = np.linalg.eigh(H)
-    return e, ev
-
-def Perturbed_XXZ(sites,BC,alpha,lambd):
-    H = .25*spin_interactions(sites,1,BC,1,1,alpha)
-    H+= .25*lambd*spin_interactions(sites,2,BC,1,1,alpha)
-    e, ev = np.linalg.eigh(H)
-    return e, ev
 
 ##(2.3) SYMMETRIES
 
@@ -380,7 +360,7 @@ def parity_subspace(sites,basis,ener,pariti):
 
 # Reorders the eigenkets and eigenstates in the first even block and second odd block	
 def parity_subspace_both(sites,basis,ener):
-    dim = 2**sites
+    dim = len(ener)
     basis2 = np.zeros((dim,dim),dtype=complex)
     if sites % 2 == 0:
         rangoz = int(sites/2)
@@ -409,6 +389,7 @@ def parity_subspace_both(sites,basis,ener):
             enerparity.append(ener[i])
             basisparity[:,dimparity]=basis[:,i]
     return enerparity,basisparity[:,0:dimparity+1],dimeven
+
 
 	
 # Operator 1/2 (S_zi+S_z(sites-i)) which commutes with parity!
@@ -451,6 +432,39 @@ def sz_subspace(sites,n_partic):
             states[label_state-1] = i
             flag[i] = label_state
     return states, flag
+
+def sz_subspace_parity_subspace_both(sites,n_partic,basis,ener):
+    dim = len(ener)
+    states, flag = sz_subspace(sites,n_partic)
+    basis2 = np.zeros((dim,dim),dtype=complex)
+    if sites % 2 == 0:
+        rangoz = int(sites/2)
+    else:
+        rangoz = int((sites-1)/2)
+    #print(rangoz)
+    for i in range(dim):
+        q = states[i]
+        p = states[i]
+        for j in range(rangoz):
+            q = mvbits(p,j,1,q,sites-1-j)
+            q = mvbits(p,sites-1-j,1,q,j)
+        basis2[i,:] = basis[flag[q-1],:]
+    dimparity = -1
+    enerparity = []
+    basisparity = np.zeros((dim,dim),dtype=complex)
+    for i in range(dim):
+        if np.vdot(basis[:,i],basis2[:,i]).real > 0:
+            dimparity += 1
+            enerparity.append(ener[i])
+            basisparity[:,dimparity]=basis[:,i]
+    dimeven = len(enerparity)
+    for i in range(dim):
+        if np.vdot(basis[:,i],basis2[:,i]).real < 0:
+            dimparity += 1
+            enerparity.append(ener[i])
+            basisparity[:,dimparity]=basis[:,i]
+    return enerparity,basisparity[:,0:dimparity+1],dimeven
+
 
 #Neighbor (z,i)(z,j) interaction - The opt version is faster if
 def sz_subspace_S_zi(pos_i,sites,n_partic):  
@@ -720,6 +734,7 @@ def OTOC_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.zeros(N,dtype = "float32")
     U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
+    tiempo = np.linspace(t0,t0+N*dt,N)
     for ti in range(0,N):
         for c1 in range(0,dim):
             U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
@@ -760,7 +775,7 @@ def OTOCF_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
         mm1= FB.cgemm(1,Udagger,mm)
         mm = FB.cgemm(1,mm1,S)
         mm = FB.cgemm(1,mm,mm)
-        otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
+        otok[ti] = 1 - (np.matrix.trace(mm)/dim).real 
     otok = np.array(otok)
     return otok
 
@@ -782,12 +797,12 @@ def OTOCF_opt_infty_nobasischange(V,W,ener,N,dt,t0):
         mm1= FB.cgemm(1,Udagger,mm)
         mm = FB.cgemm(1,mm1,S)
         mm = FB.cgemm(1,mm,mm)
-        otok[ti] = 1 - (np.matrix.trace(mm)/len(ener)).real 
+        otok[ti] = 1 - (np.matrix.trace(mm)/dim).real 
     otok = np.array(otok)
     return otok
 
 
-# BOTH OTOCS 1 and 2 (REQUIRES A MORE DETAILED DESCRIPTION)
+# BOTH OTOCS 1 and 2 (Tr(S S0(t) S0(t) S)/D, -Re [Tr(S0(t) S S0(t) S)]/D)
 def OTOCS_opt_infty(V,W,ener,basis,N,dt,t0,ortho):
     basis = np.complex64(basis, order = 'F')
     V = np.complex64(V, order = 'F')
@@ -845,12 +860,13 @@ def OTOC_infty(V,W,ener,basis,N,dt,t0,ortho):
     otok = np.zeros(N,dtype = float)
     U = np.zeros((dim,dim),dtype=complex) # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype=complex) # U*
+    tiempo = np.linspace(t0,N*dt,N)
     for ti in range(0,N):
         for c1 in range(0,dim):
             U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
             Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
-        mm = np.matmul(S0,U)
-        mm1= np.matmul(Udagger,mm)
+        mm = np.matmul(S0,U) # S0 * U
+        mm1= np.matmul(Udagger,mm) # Udaga * S0 * U = S0(t)
         mm = np.matmul(mm1,S) - np.matmul(S,mm1)
         mm = np.matmul(np.transpose(np.conjugate(mm)),mm)
         otok[ti] = 0.5*(np.abs(np.matrix.trace(mm))/dim)
@@ -884,7 +900,49 @@ def OTOCF_infty(V,W,ener,basis,N,dt,t0,ortho):
         otok[ti] = 1 - (np.matrix.trace(mm)/dim).real 
     otok = np.array(otok)
     return otok
+    
 #----------------  (4) 4 POINT OTOCS  ----------------#
+
+def OTOC4F_infty(A,B,C,D,ener,basis,N,dt,t0,ortho):
+    dim = len(ener)
+    if ortho == True:
+        basist = np.transpose(basis)
+    else:
+        basist = np.linalg.inv(basis)
+    A = np.matmul(A,basis)
+    A = np.matmul(basist,A)
+    B = np.matmul(B,basis)
+    B = np.matmul(basist,B)
+    C = np.matmul(C,basis)
+    C = np.matmul(basist,C)
+    D = np.matmul(D,basis)
+    D = np.matmul(basist,D)
+    mmc = np.zeros((dim,dim),dtype=complex)
+    mmd = np.zeros((dim,dim),dtype=complex)
+    mm = np.zeros((dim,dim),dtype=complex)
+    mm1 = np.zeros((dim,dim),dtype=complex)
+    tiempo = np.linspace(t0,N*dt+t0,N)
+    otok = np.zeros(N,dtype=complex)
+    U = np.zeros((dim,dim),dtype=complex) # U evolucion temporal
+    Udagger = np.zeros((dim,dim),dtype=complex) # U*
+    for ti in range(0,N):
+        for c1 in range(0,dim):
+            U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
+            Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
+        mmc = np.matmul(C,U)
+        mmc = np.matmul(Udagger,mmc) # C(t)
+        mmd = np.matmul(D,U)
+        mmd = np.matmul(Udagger,mmd) # D(t)
+        mm = np.matmul(A,B) # AB
+        mm1 = np.matmul(mmc,mmd) #C(t)D(t) 
+        mm = np.matmul(mm,mm1)  #ABC(t)D(t)     
+        otok[ti] = np.matrix.trace(mm)/dim #Tr[ ABC(t)D(t)]      
+        mm = np.matmul(A,mmc) #AC(t)
+        mm1 = np.matmul(B,mmd) #BD(t)
+        mm = np.matmul(mm,mm1) #AC(t)BD(t)
+        otok[ti] += - (np.matrix.trace(mm)/dim).real #realTr( AC(t)BD(t))
+    otok = np.array(otok)
+    return otok
 
 def OTOC4F_opt_infty(A,B,C,D,ener,basis,N,dt,t0,ortho):
     basis = np.complex64(basis, order = 'F')
@@ -910,7 +968,7 @@ def OTOC4F_opt_infty(A,B,C,D,ener,basis,N,dt,t0,ortho):
     mm = np.zeros((dim,dim),dtype="complex64",order='F')
     mm1 = np.zeros((dim,dim),dtype="complex64",order='F')
     tiempo = np.linspace(t0,N*dt+t0,N)
-    otok = np.zeros(N,dtype = "float32")
+    otok = np.zeros(N,dtype = "complex64")
     U = np.zeros((dim,dim),dtype="complex64",order='F') # U evolucion temporal
     Udagger = np.zeros((dim,dim),dtype="complex64",order='F') # U*
     for ti in range(0,N):
@@ -918,17 +976,17 @@ def OTOC4F_opt_infty(A,B,C,D,ener,basis,N,dt,t0,ortho):
             U[c1][c1] = np.exp(-1j*tiempo[ti]*ener[c1])
             Udagger[c1][c1] = np.exp(1j*tiempo[ti]*ener[c1])
         mmc = FB.cgemm(1,C,U)
-        mmc= FB.cgemm(1,Udagger,mmc)
+        mmc= FB.cgemm(1,Udagger,mmc) # C(t)
         mmd = FB.cgemm(1,D,U)
-        mmd= FB.cgemm(1,Udagger,mmd)
-        mm = FB.cgemm(1,A,B)
-        mm1 = FB.cgemm(1,mmc,mmd)
-        mm = FB.cgemm(1,mm,mm1)       
-        otok[ti] = np.matrix.trace(mm)/dim       
-        mm = FB.cgemm(1,A,mmc)
-        mm1 = FB.cgemm(1,B,mmd)
-        mm = FB.cgemm(1,mm,mm1)
-        otok[ti] += - (np.matrix.trace(mm)/dim).real
+        mmd= FB.cgemm(1,Udagger,mmd) # D(t)
+        mm = FB.cgemm(1,A,B) # AB
+        mm1 = FB.cgemm(1,mmc,mmd) #C(t)D(t) 
+        mm = FB.cgemm(1,mm,mm1)  #ABC(t)D(t)     
+        otok[ti] = np.matrix.trace(mm)/dim #Tr[ ABC(t)D(t)]      
+        mm = FB.cgemm(1,A,mmc) #AC(t)
+        mm1 = FB.cgemm(1,B,mmd) #BD(t)
+        mm = FB.cgemm(1,mm,mm1) #AC(t)BD(t)
+        otok[ti] += - (np.matrix.trace(mm)/dim).real #realTr( AC(t)BD(t))
     otok = np.array(otok)
     return otok
 #----------------  (4) CHAOS OPERATIONS  ----------------#
@@ -1057,6 +1115,7 @@ def IPR_eigenstates(basis):
     for i in range(dim1):
         for j in range(dim2):
             ipr[i]+= (np.abs(basis[j,i]))**4
+    ipr = 1.0/ipr
     return ipr
 
 # Returns OTOC's Spectarl IPR and Standard deviation.
@@ -1081,7 +1140,15 @@ def OTOC_chaotic_measures(tiempo,otoks,lentest0,lentest,dt):
     #sipr_df = 1/sipr_df
     sipr_simpson = 1/sipr_simpson
     return sipr_simpson, std
-    
+
+# Returns OTOC's Standard deviation.
+def OTOC_chaotic_measures_std(tiempo,otoks,lentest0,lentest,dt):
+    lentest = int(lentest/dt)
+    lentest0 = int(lentest0/dt)
+    otok_osc = otoks[lentest0:lentest] - np.mean(otoks[lentest0:lentest])
+    std = np.std(otok_osc)
+    return std
+
 # Returns OTOC's Spectarl IPR and Standard deviation with a more sofisticated approach.
 def OTOC_chaotic_measures_soph(tiempo,otoks,largo,largoz,N,dt,WINDOWTYPE):
     largofinal = int((N - int(N/(largo)))/largoz) 
@@ -1104,6 +1171,31 @@ def OTOC_chaotic_measures_soph(tiempo,otoks,largo,largoz,N,dt,WINDOWTYPE):
     std = 1.0/std
     return sipr_simpson, std
 
+#---------------- (5) SPIN CHAIN MODELS ----------------#
+
+def Tilted_model(sites,BC,J,B,tita):
+    H = .25*J*spin_interactions(sites,1,BC,0,0,1)
+    H+= .5*B*(np.sin(tita)*S_x(sites) + np.cos(tita)*S_z(sites))
+    e, ev = np.linalg.eigh(H)
+    return e, ev
+
+def Ising_XZ_fields(sites,BC,J,hx,hy,hz):
+    H = -J*spin_interactions(sites,1,BC,0,0,1)
+    H+= (hx*S_x(sites) + hy*S_y(sites) + hz*S_z(sites))
+    e, ev = np.linalg.eigh(H)
+    return e, ev
+
+def Perturbed_XXZ(sites,BC,alpha,lambd):
+    H = .25*spin_interactions(sites,1,BC,1,1,alpha)
+    H+= .25*lambd*spin_interactions(sites,2,BC,1,1,alpha)
+    e, ev = np.linalg.eigh(H)
+    return e, ev
+	
+def Perturbed_XXZ_sz_subspace(sites,n_partic,BC,alpha,lambd):
+    H = .25*sz_subspace_spin_interactions(sites,n_partic,1,BC,1,1,alpha)
+    H+= .25*lambd*sz_subspace_spin_interactions(sites,n_partic,2,BC,1,1,alpha)
+    e, ev = np.linalg.eigh(H)
+    return e, ev
 
 #----------------  (5) MISCELLANEA CODE  ----------------#
 
@@ -1112,15 +1204,7 @@ def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
 def angle_between(v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
-
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
-    """
+    """ Returns the angle in radians between vectors 'v1' and 'v2'"""
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
